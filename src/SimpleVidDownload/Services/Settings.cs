@@ -10,6 +10,9 @@ public class Settings
     public int Quality { get; set; }
     /// <summary>"vi" hoặc "en"</summary>
     public string Language { get; set; } = "vi";
+    public bool Upscale { get; set; }
+    /// <summary>0 = 1080p, 1 = 1440p, 2 = 2160p</summary>
+    public int UpscaleTarget { get; set; }
 
     public static Settings Load()
     {

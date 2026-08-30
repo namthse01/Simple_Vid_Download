@@ -70,6 +70,7 @@ The whole interface speaks English too — hit **EN** in the header:
 | Cancel | The download button turns into a **cancel** button while running |
 | Update engine | Refreshes yt-dlp — press this first when YouTube suddenly breaks |
 | Language | **VI / EN** buttons in the header switch the whole interface; your choice is remembered |
+| AI upscale | Optional, off by default — only offered when your GPU can actually run it |
 | **Capture from a web page** | The Video DownloadHelper-style mode, described below |
 
 ### Capture mode — for pages yt-dlp reports as `Unsupported URL`
@@ -118,6 +119,32 @@ Two things it does that a plain sniffer misses: it captures requests made inside
 iframes** (many video sites embed a player from another domain), and it recognises streams by
 **Content-Type**, so URLs with no `.mp4` or `.m3u8` extension still get caught. Ad hosts and
 individual stream segments are filtered out of the list.
+
+### AI upscaling — and when it is actually worth it
+
+First, the distinction that matters: if a site already offers 1080p and you ended up with 360p, you
+do not need upscaling — just download the better version, which the quality picker already does.
+
+Upscaling is for the other case: the source genuinely has nothing sharper. Plain `ffmpeg` scaling
+adds **no** detail there — it only makes the file nine times bigger and blurrier, and your player
+already scales to fullscreen anyway. So this app uses **Real-ESRGAN**, which reconstructs plausible
+detail rather than merely stretching pixels.
+
+The cost is time. Measured on an RTX 4060 Ti at 360p → 1080p: **about 11 frames per second**, i.e.
+roughly two minutes of work per minute of video. A 10-minute clip takes around 23 minutes.
+
+Because of that, the option is **off by default** and never runs on its own. Tick *Upscale with AI*,
+pick a target, and it runs after the download finishes — with a percentage, a live time estimate,
+and a cancel button. Your original file is always kept; the result is saved alongside it as
+`name_1080p.mp4`.
+
+The checkbox is only enabled if your machine can really do it. On startup the app upscales a tiny
+64×64 test image: having Vulkan installed is not proof that it will work, so it checks for real.
+When it cannot, the control stays disabled and says why on hover.
+
+Internally the video is processed in ~10-second segments, and each segment's frames are deleted once
+it is encoded. Extracting a whole 30-minute video to PNG frames first would need over 100 GB;
+chunking keeps it near 1 GB no matter how long the video is.
 
 ### A note on non-ASCII filenames
 
@@ -230,6 +257,7 @@ tự điền luôn vào ô.
 | Hủy giữa chừng | Nút TẢI XUỐNG biến thành nút **HỦY** khi đang tải |
 | Cập nhật engine | Cập nhật yt-dlp — bấm cái này đầu tiên khi YouTube đột nhiên tải lỗi |
 | Đổi ngôn ngữ | Nút **VI / EN** ở góc trên đổi toàn bộ giao diện; app nhớ lựa chọn của bạn |
+| Nâng cấp AI | Tùy chọn, mặc định tắt — chỉ hiện dùng được khi GPU máy bạn chạy nổi |
 | **Bắt video từ trang web** | Chế độ "y như Video DownloadHelper", xem mục dưới |
 
 ### Bắt video từ trang web — khi dán link báo `Unsupported URL`
@@ -276,6 +304,30 @@ Hai điểm mà bộ bắt link thường bỏ sót nhưng app làm được: b�
 domain** (rất nhiều trang phim nhúng player từ domain khác), và nhận diện stream qua
 **Content-Type** nên link không có đuôi `.mp4`/`.m3u8` vẫn tóm được. Host quảng cáo và các mảnh
 stream lẻ bị lọc khỏi danh sách.
+
+### Nâng cấp bằng AI — và khi nào thật sự đáng dùng
+
+Trước hết phải phân biệt: nếu trang web vốn có sẵn 1080p mà bạn lỡ tải 360p thì **không cần nâng cấp
+gì cả** — chỉ cần tải lại bản 1080p, phần chọn chất lượng đã lo việc đó.
+
+Nâng cấp chỉ dành cho trường hợp còn lại: nguồn thật sự không có bản nào nét hơn. Lúc đó phóng to
+bằng `ffmpeg` thường **không thêm được chi tiết nào**, chỉ làm file nặng gấp chín lần và mờ hơn, mà
+trình phát vốn đã tự phóng to khi xem toàn màn hình. Nên app dùng **Real-ESRGAN** — AI dựng lại chi
+tiết chứ không phải kéo giãn pixel.
+
+Cái giá là thời gian. Đo trên RTX 4060 Ti khi nâng 360p → 1080p: **khoảng 11 khung/giây**, tức mỗi
+phút video mất chừng hai phút xử lý. Clip 10 phút mất khoảng 23 phút.
+
+Vì vậy tùy chọn này **mặc định tắt** và không bao giờ tự chạy. Tick *Nâng độ phân giải bằng AI*, chọn
+đích, nó sẽ chạy sau khi tải xong — có hiện phần trăm, ước lượng thời gian còn lại, và hủy được giữa
+chừng. File gốc luôn được giữ nguyên; bản nâng cấp lưu cạnh đó với tên `tên_1080p.mp4`.
+
+Ô tick chỉ bật khi máy bạn thật sự chạy được. Lúc khởi động app sẽ thử nâng một ảnh 64×64: có cài
+Vulkan chưa chắc đã chạy nổi, nên phải thử thật. Máy nào không kham được thì ô đó để mờ và rê chuột
+vào sẽ thấy lý do.
+
+Bên trong, video được xử lý theo từng đoạn ~10 giây, xong đoạn nào xoá ảnh đoạn đó. Nếu rã cả video
+30 phút ra ảnh PNG thì cần hơn 100 GB đĩa; cắt đoạn thì chỉ quanh 1 GB dù video dài bao nhiêu.
 
 ### Về tên file tiếng Việt
 

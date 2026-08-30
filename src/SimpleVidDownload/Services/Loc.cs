@@ -43,6 +43,28 @@ public static class Loc
         ["cookieTip"]    = ["Cho video riêng tư hoặc giới hạn tuổi — nên chọn edge hoặc firefox",
                             "For private or age-restricted videos — prefer edge or firefox"],
 
+        // --- nâng cấp bằng AI ---
+        ["lblUpscale"]   = ["Nâng cấp", "Upscale"],
+        ["upscale"]      = ["Nâng độ phân giải bằng AI", "Upscale with AI"],
+        ["upscaleTip"]   = ["Chỉ dùng khi video gốc không có bản nào nét hơn.\nAI thêm chi tiết thật, nhưng CHẬM: video 1 phút mất khoảng 2 phút xử lý.\nFile gốc vẫn được giữ nguyên.",
+                            "Only worth it when the source has nothing sharper.\nThe AI adds real detail but is SLOW: about 2 minutes of work per minute of video.\nThe original file is kept."],
+        ["upscaleNoGpu"] = ["GPU của máy không chạy được AI upscale (GPU not meet requirements)",
+                            "This machine's GPU does not meet the requirements for AI upscaling"],
+        ["upscaleNoTool"]= ["Chưa có công cụ AI — chạy setup.ps1 để tải về",
+                            "The AI tool is missing — run setup.ps1 to fetch it"],
+        ["upscaleCheck"] = ["Đang kiểm tra GPU...", "Checking the GPU..."],
+        ["u0"]           = ["lên 1080p", "to 1080p"],
+        ["u1"]           = ["lên 1440p (2K)", "to 1440p (2K)"],
+        ["u2"]           = ["lên 4K (2160p)", "to 4K (2160p)"],
+
+        ["upBusy"]       = ["Đang nâng cấp bằng AI... {0}%  (còn ~{1})", "AI upscaling... {0}%  (~{1} left)"],
+        ["upSplit"]      = ["Đang chuẩn bị...", "Preparing..."],
+        ["upJoin"]       = ["Đang ghép lại...", "Joining the pieces..."],
+        ["upDone"]       = ["✅ Nâng cấp xong! Đã lưu: ", "✅ Upscaled! Saved: "],
+        ["upFail"]       = ["❌ Nâng cấp thất bại — file tải về vẫn còn nguyên.",
+                            "❌ Upscaling failed — your downloaded file is untouched."],
+        ["upSkip"]       = ["Video đã đủ nét, không cần nâng cấp.", "The video is already sharp enough; no upscaling needed."],
+
         ["lblFolder"]    = ["Lưu vào", "Save to"],
         ["browse"]       = ["Chọn...", "Browse..."],
         ["openFolder"]   = ["Mở thư mục", "Open folder"],

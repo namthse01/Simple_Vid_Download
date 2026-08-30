@@ -24,6 +24,9 @@ public partial class MainWindow : Window
     /// <summary>File vừa tải xong — cho nút "Mở video". Rỗng nghĩa là chưa có gì để mở.</summary>
     private string _lastSavedPath = "";
 
+    /// <summary>Cho phép hủy khâu nâng cấp AI (khâu này có thể chạy rất lâu).</summary>
+    private CancellationTokenSource? _upscaleCts;
+
     private static readonly SolidColorBrush GoBrush = new((Color)ColorConverter.ConvertFromString("#A6E3A1"));
     private static readonly SolidColorBrush BadBrush = new((Color)ColorConverter.ConvertFromString("#F38BA8"));
 
@@ -52,6 +55,7 @@ public partial class MainWindow : Window
             }
             TryFillFromClipboard();
             TxtUrl.Focus();
+            _ = InitUpscaleAsync();
         };
 
         Closing += (_, _) =>
@@ -68,7 +72,98 @@ public partial class MainWindow : Window
         _settings.Folder = TxtFolder.Text.Trim();
         _settings.Quality = CboQuality.SelectedIndex;
         _settings.Language = Loc.Current == Lang.En ? "en" : "vi";
+        _settings.Upscale = ChkUpscale.IsChecked == true;
+        _settings.UpscaleTarget = CboUpscale.SelectedIndex;
         _settings.Save();
+    }
+
+    // ================= nâng cấp bằng AI =================
+
+    /// <summary>
+    /// Chỉ bật ô tick khi GPU thật sự chạy được. Cách chắc ăn nhất là nâng thử một ảnh 64x64:
+    /// có Vulkan chưa chắc đã chạy nổi (driver cũ, GPU quá yếu).
+    /// </summary>
+    private async Task InitUpscaleAsync()
+    {
+        if (!Upscaler.ToolAvailable)
+        {
+            ChkUpscale.IsEnabled = false;
+            CboUpscale.IsEnabled = false;
+            ChkUpscale.ToolTip = Loc.T("upscaleNoTool");
+            return;
+        }
+
+        ChkUpscale.ToolTip = Loc.T("upscaleCheck");
+        bool ok = await Upscaler.ProbeGpuAsync();
+
+        ChkUpscale.IsEnabled = ok;
+        CboUpscale.IsEnabled = ok;
+        ChkUpscale.ToolTip = ok ? Loc.T("upscaleTip") : Loc.T("upscaleNoGpu");
+        CboUpscale.ToolTip = ChkUpscale.ToolTip;
+
+        if (ok)
+        {
+            if (_settings.UpscaleTarget >= 0 && _settings.UpscaleTarget < CboUpscale.Items.Count)
+                CboUpscale.SelectedIndex = _settings.UpscaleTarget;
+            ChkUpscale.IsChecked = _settings.Upscale;
+        }
+    }
+
+    private static string FormatEta(TimeSpan t) =>
+        t.TotalHours >= 1 ? $"{(int)t.TotalHours}h{t.Minutes:D2}"
+        : t.TotalMinutes >= 1 ? $"{(int)t.TotalMinutes} phút"
+        : $"{Math.Max(1, (int)t.TotalSeconds)} giây";
+
+    private async Task RunUpscaleAsync(string path)
+    {
+        int[] targets = [1080, 1440, 2160];
+        int target = targets[Math.Clamp(CboUpscale.SelectedIndex, 0, targets.Length - 1)];
+
+        var info = await Upscaler.ProbeVideoAsync(path);
+        if (info is not null && info.Height >= target)
+        {
+            SetStatus(Loc.T("upSkip"));
+            return;
+        }
+
+        SetBusy(true);
+        Pb.IsIndeterminate = false;
+        Pb.Value = 0;
+        _upscaleCts = new CancellationTokenSource();
+
+        var reporter = new Progress<UpscaleProgress>(p =>
+        {
+            Pb.Value = p.Percent;
+            SetStatus(p.Stage switch
+            {
+                "split" => Loc.T("upSplit"),
+                "join" => Loc.T("upJoin"),
+                _ => string.Format(Loc.T("upBusy"),
+                        p.Percent.ToString("0"),
+                        p.Eta.HasValue ? FormatEta(p.Eta.Value) : "?")
+            });
+        });
+
+        string? outPath = null;
+        try { outPath = await Upscaler.UpscaleAsync(path, target, reporter, _upscaleCts.Token); }
+        catch { }
+
+        bool cancelled = _upscaleCts.IsCancellationRequested;
+        _upscaleCts.Dispose();
+        _upscaleCts = null;
+        SetBusy(false);
+
+        if (outPath is not null && File.Exists(outPath))
+        {
+            Pb.Value = 100;
+            _lastSavedPath = outPath;      // nút "Mở video" trỏ sang bản đã nâng
+            BtnOpenVideo.IsEnabled = true;
+            SetStatus(Loc.T("upDone") + Path.GetFileName(outPath));
+        }
+        else
+        {
+            SetStatus(cancelled ? Loc.T("cancelled") : Loc.T("upFail"));
+        }
     }
 
     // ================= ngôn ngữ =================
@@ -106,6 +201,19 @@ public partial class MainWindow : Window
         ChkPlaylist.ToolTip = Loc.T("playlistTip");
         ChkCookie.Content = Loc.T("cookie");
         ChkCookie.ToolTip = Loc.T("cookieTip");
+
+        LblUpscale.Text = Loc.T("lblUpscale");
+        ChkUpscale.Content = Loc.T("upscale");
+        var keepU = CboUpscale.SelectedIndex;
+        for (int i = 0; i < CboUpscale.Items.Count; i++)
+            ((ComboBoxItem)CboUpscale.Items[i]!).Content = Loc.T("u" + i);
+        CboUpscale.SelectedIndex = keepU;
+        // tooltip do InitUpscaleAsync đặt (tùy GPU có chạy được không), chỉ dịch lại khi đã biết
+        if (Upscaler.GpuOk.HasValue)
+        {
+            ChkUpscale.ToolTip = Upscaler.GpuOk.Value ? Loc.T("upscaleTip") : Loc.T("upscaleNoGpu");
+            CboUpscale.ToolTip = ChkUpscale.ToolTip;
+        }
 
         LblFolder.Text = Loc.T("lblFolder");
         BtnFolder.Content = Loc.T("browse");
@@ -247,6 +355,14 @@ public partial class MainWindow : Window
 
     private async void BtnDownload_Click(object sender, RoutedEventArgs e)
     {
+        // đang nâng cấp AI -> nút này là nút Hủy
+        if (_upscaleCts is { IsCancellationRequested: false })
+        {
+            _upscaleCts.Cancel();
+            SetStatus(Loc.T("cancelling"));
+            return;
+        }
+
         // đang tải -> nút này là nút Hủy
         if (_runner is { IsRunning: true })
         {
@@ -356,6 +472,10 @@ public partial class MainWindow : Window
             {
                 _lastSavedPath = result.SavedPath;
                 BtnOpenVideo.IsEnabled = true;
+
+                // tải xong mới tới lượt AI, và chỉ khi người dùng chủ động bật
+                if (ChkUpscale.IsEnabled && ChkUpscale.IsChecked == true)
+                    await RunUpscaleAsync(result.SavedPath);
             }
         }
         else

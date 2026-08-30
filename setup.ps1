@@ -44,7 +44,25 @@ try {
     Copy-Item (Join-Path $tmp 'deno\deno.exe') (Join-Path $bin 'deno.exe') -Force
     Ok ((& (Join-Path $bin 'deno.exe') --version | Select-Object -First 1))
 
-    # ---- 4. Build app C# ----
+    # ---- 4. Real-ESRGAN: nang do phan giai bang AI (tuy chon) ----
+    Say 'Dang tai cong cu AI upscale (~45MB)...'
+    try {
+        $esZip = Join-Path $tmp 'esrgan.zip'
+        Invoke-WebRequest -Uri 'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip' `
+            -OutFile $esZip -UseBasicParsing
+        $esDir = Join-Path $bin 'realesrgan'
+        New-Item -ItemType Directory -Path $esDir -Force | Out-Null
+        Expand-Archive -Path $esZip -DestinationPath (Join-Path $tmp 'es') -Force
+        foreach ($f in 'realesrgan-ncnn-vulkan.exe', 'vcomp140.dll') {
+            Copy-Item (Join-Path $tmp "es\$f") (Join-Path $esDir $f) -Force
+        }
+        Copy-Item (Join-Path $tmp 'es\models') $esDir -Recurse -Force
+        Ok 'Real-ESRGAN (app se tu kiem tra GPU co chay noi khong)'
+    } catch {
+        Warn 'Khong tai duoc Real-ESRGAN — app van chay binh thuong, chi la khong co muc nang cap AI.'
+    }
+
+    # ---- 5. Build app C# ----
     Say 'Dang build app...'
     $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
     if (-not $dotnet) {
@@ -56,7 +74,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Build that bai' }
     Ok ('app\DCDownload.exe')
 
-    # ---- 5. WebView2 Runtime (can cho che do bat video) ----
+    # ---- 6. WebView2 Runtime (can cho che do bat video) ----
     $k = @(
         'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}',
         'HKLM:\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
@@ -68,7 +86,7 @@ try {
         Warn 'Tai tai: https://developer.microsoft.com/microsoft-edge/webview2/'
     }
 
-    # ---- 6. Shortcut ngoai Desktop ----
+    # ---- 7. Shortcut ngoai Desktop ----
     Say 'Dang tao shortcut...'
     $ws = New-Object -ComObject WScript.Shell
     $lnk = $ws.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'DCDownload.lnk'))

@@ -46,6 +46,7 @@
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock x:Name="LblLink" Grid.Row="0" Grid.Column="0" Text="Link video"
@@ -98,9 +99,21 @@
           </StackPanel>
         </WrapPanel>
 
-        <TextBlock x:Name="LblFolder" Grid.Row="2" Grid.Column="0" Text="Lưu vào"
+        <TextBlock x:Name="LblUpscale" Grid.Row="2" Grid.Column="0" Text="Nâng cấp"
                    Style="{StaticResource Lbl}" Margin="0,14,12,0"/>
-        <Grid Grid.Row="2" Grid.Column="1" Margin="0,14,0,0">
+        <WrapPanel Grid.Row="2" Grid.Column="1" Margin="0,14,0,0">
+          <CheckBox x:Name="ChkUpscale" Content="Nâng độ phân giải bằng AI"
+                    IsEnabled="False" Margin="0,0,14,0"/>
+          <ComboBox x:Name="CboUpscale" Width="146" SelectedIndex="0" IsEnabled="False">
+            <ComboBoxItem Content="lên 1080p"/>
+            <ComboBoxItem Content="lên 1440p (2K)"/>
+            <ComboBoxItem Content="lên 4K (2160p)"/>
+          </ComboBox>
+        </WrapPanel>
+
+        <TextBlock x:Name="LblFolder" Grid.Row="3" Grid.Column="0" Text="Lưu vào"
+                   Style="{StaticResource Lbl}" Margin="0,14,12,0"/>
+        <Grid Grid.Row="3" Grid.Column="1" Margin="0,14,0,0">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
