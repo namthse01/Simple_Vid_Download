@@ -38,7 +38,15 @@ pages, then checks whether the WebView2 Runtime is present (Windows 11 ships it 
 
 ### Running it
 
-Double-click **`TaiVideo.bat`**. If your clipboard already holds a URL, the app fills it in for you.
+Double-click **`TaiVideo.vbs`**. If your clipboard already holds a URL, the app fills it in for you.
+
+Why a `.vbs` launcher: Windows 11 uses Windows Terminal as its default console host, and Terminal
+ignores PowerShell's `-WindowStyle Hidden`. Starting the script directly therefore leaves a black
+console window sitting behind the app and taking up a taskbar slot. Going through `wscript` creates
+the process hidden from the outset, so only the app window ever appears.
+
+`TaiVideo.bat` still works and simply forwards to the `.vbs`, but a `.bat` always opens a console of
+its own, so you get a brief flash. Prefer the `.vbs`.
 
 ### Features
 
@@ -125,7 +133,8 @@ non-Latin text, so the app passes `--encoding utf-8`. The usual suspects — `PY
 
 ```
 TaiVideo\
-├─ TaiVideo.bat      ← double-click to run
+├─ TaiVideo.vbs      ← double-click to run (no console window)
+├─ TaiVideo.bat      ← same thing, but flashes a console briefly
 ├─ TaiVideo.ps1      ← the whole app (PowerShell + WPF)
 ├─ setup.ps1         ← downloads the engines into bin\
 ├─ bin\              ← yt-dlp, ffmpeg, ffprobe, deno, WebView2 SDK (not in git)
@@ -170,7 +179,15 @@ kiểm tra máy đã có WebView2 Runtime chưa (Windows 11 thường có sẵn 
 
 ### Cách chạy
 
-Nháy đúp **`TaiVideo.bat`**. Nếu clipboard đang có sẵn link thì app tự điền luôn vào ô.
+Nháy đúp **`TaiVideo.vbs`**. Nếu clipboard đang có sẵn link thì app tự điền luôn vào ô.
+
+Vì sao phải qua file `.vbs`: Windows 11 dùng Windows Terminal làm console mặc định, mà Terminal thì
+**bỏ qua** cờ `-WindowStyle Hidden` của PowerShell. Chạy thẳng script sẽ để lại một cửa sổ đen thui
+nằm sau app và chiếm một ô trên thanh tác vụ. Chạy qua `wscript` thì tiến trình được tạo ở chế độ ẩn
+ngay từ đầu, nên chỉ hiện đúng cửa sổ app.
+
+`TaiVideo.bat` vẫn dùng được (nó gọi sang `.vbs`), nhưng file `.bat` luôn tự mở một console nên sẽ
+nháy một cái. Cứ dùng `.vbs` cho gọn.
 
 ### Các tính năng
 
@@ -254,7 +271,8 @@ thị — dòng `✅ Xong! Đã lưu: <tên file>` ở thanh trạng thái mới
 
 ```
 TaiVideo\
-├─ TaiVideo.bat      ← nháy đúp để chạy
+├─ TaiVideo.vbs      ← nháy đúp để chạy (không hiện console)
+├─ TaiVideo.bat      ← cũng chạy được, nhưng nháy console một cái
 ├─ TaiVideo.ps1      ← toàn bộ app (PowerShell + WPF)
 ├─ setup.ps1         ← tải engine về thư mục bin\
 ├─ bin\              ← yt-dlp, ffmpeg, ffprobe, deno, WebView2 SDK (không đưa lên git)
