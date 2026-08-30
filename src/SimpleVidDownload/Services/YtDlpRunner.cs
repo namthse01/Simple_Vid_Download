@@ -128,7 +128,7 @@ public class YtDlpRunner
 
         if (RxStage.IsMatch(line))
         {
-            StageChanged?.Invoke("Đang ghép / chuyển đổi file...");
+            StageChanged?.Invoke(Loc.T("merging"));
             return;
         }
 

@@ -84,11 +84,11 @@
     </Setter>
   </Style>
 
-  <Style TargetType="TextBlock">
-    <Setter Property="Foreground" Value="{StaticResource Text}"/>
-    <Setter Property="FontSize" Value="13"/>
-    <Setter Property="VerticalAlignment" Value="Center"/>
-  </Style>
+  <!-- KHÔNG đặt style ngầm cho TextBlock ở đây!
+       Nút bấm và các item tự sinh TextBlock bên trong để hiển thị chữ; chúng sẽ ăn phải
+       style ngầm này và đè lên màu chữ riêng của nút -> chữ sáng trên nền sáng, mất hút.
+       Thay vào đó mỗi cửa sổ đặt Foreground/FontSize để TextBlock kế thừa tự nhiên,
+       còn nút thì màu chữ riêng vẫn thắng. -->
 
   <Style x:Key="Lbl" TargetType="TextBlock">
     <Setter Property="Foreground" Value="{StaticResource Muted}"/>

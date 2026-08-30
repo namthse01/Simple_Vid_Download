@@ -26,6 +26,8 @@ public partial class ResolveWindow : Window
     {
         InitializeComponent();
         _embedUrl = embedUrl;
+        Title = Loc.T("resTitle");
+        LblStatus.Text = Loc.T("resStatus");
 
         Loaded += async (_, _) => await InitAsync();
         Closed += (_, _) =>
@@ -103,7 +105,7 @@ public partial class ResolveWindow : Window
         else if (sec >= 20 && _step == 4) { _step = 5; Play(); ClickCenter(); }
 
         if (sec >= 12 && sec < 13)
-            LblStatus.Text = "Vẫn đang thử... nếu thấy nút ▶ trong khung dưới, bạn bấm giúp một cái.";
+            LblStatus.Text = Loc.T("resRetry");
 
         if (sec >= 32) { _timer.Stop(); Close(); }
     }

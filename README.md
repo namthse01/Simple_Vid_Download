@@ -50,6 +50,10 @@ dotnet publish src/SimpleVidDownload -c Release -o app
 Double-click the **Tai Video** shortcut, or `app\TaiVideo.exe`. If your clipboard already holds a
 URL, the app fills it in for you.
 
+The whole interface speaks English too — hit **EN** in the header:
+
+![English interface](docs/screenshot-main-en.png)
+
 ### Features
 
 | Feature | Notes |
@@ -61,6 +65,7 @@ URL, the app fills it in for you.
 | Live progress | Percentage, speed and full log inside the window |
 | Cancel | The download button turns into a **cancel** button while running |
 | Update engine | Refreshes yt-dlp — press this first when YouTube suddenly breaks |
+| Language | **VI / EN** buttons in the header switch the whole interface; your choice is remembered |
 | **Capture from a web page** | The Video DownloadHelper-style mode, described below |
 
 ### Capture mode — for pages yt-dlp reports as `Unsupported URL`
@@ -213,6 +218,7 @@ tự điền luôn vào ô.
 | Thanh tiến độ + log | Xem % tải, tốc độ, lỗi ngay trong app |
 | Hủy giữa chừng | Nút TẢI XUỐNG biến thành nút **HỦY** khi đang tải |
 | Cập nhật engine | Cập nhật yt-dlp — bấm cái này đầu tiên khi YouTube đột nhiên tải lỗi |
+| Đổi ngôn ngữ | Nút **VI / EN** ở góc trên đổi toàn bộ giao diện; app nhớ lựa chọn của bạn |
 | **Bắt video từ trang web** | Chế độ "y như Video DownloadHelper", xem mục dưới |
 
 ### Bắt video từ trang web — khi dán link báo `Unsupported URL`

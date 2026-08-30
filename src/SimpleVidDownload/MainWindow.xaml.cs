@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Win32;
@@ -34,14 +35,16 @@ public partial class MainWindow : Window
         if (_settings.Quality >= 0 && _settings.Quality < CboQuality.Items.Count)
             CboQuality.SelectedIndex = _settings.Quality;
 
+        Loc.Current = _settings.Language == "en" ? Lang.En : Lang.Vi;
+        ApplyTexts();
+
         Loaded += (_, _) =>
         {
             if (!AppPaths.EngineReady)
             {
                 MessageBox.Show(
-                    $"Thiếu yt-dlp.exe trong:{Environment.NewLine}{AppPaths.EngineDir}" +
-                    $"{Environment.NewLine}{Environment.NewLine}Chạy setup.ps1 để tải engine về.",
-                    "Tải Video", MessageBoxButton.OK, MessageBoxImage.Error);
+                    string.Format(Loc.T("msgNoEngine"), AppPaths.EngineDir),
+                    Loc.T("appName"), MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             TryFillFromClipboard();
@@ -61,8 +64,72 @@ public partial class MainWindow : Window
     {
         _settings.Folder = TxtFolder.Text.Trim();
         _settings.Quality = CboQuality.SelectedIndex;
+        _settings.Language = Loc.Current == Lang.En ? "en" : "vi";
         _settings.Save();
     }
+
+    // ================= ngôn ngữ =================
+
+    private void BtnLang_Click(object sender, RoutedEventArgs e)
+    {
+        var tag = (sender as Button)?.Tag?.ToString();
+        Loc.Current = tag == "en" ? Lang.En : Lang.Vi;
+        ApplyTexts();
+        SaveSettings();
+    }
+
+    /// <summary>Đổi toàn bộ chữ trên cửa sổ sang ngôn ngữ đang chọn.</summary>
+    private void ApplyTexts()
+    {
+        Title = Loc.T("title");
+        LblAppName.Text = Loc.T("appName");
+        LblTagline.Text = Loc.T("tagline");
+
+        BtnUpdate.Content = Loc.T("update");
+        BtnUpdate.ToolTip = Loc.T("updateTip");
+
+        LblLink.Text = Loc.T("lblLink");
+        LblUrlHint.Text = Loc.T("urlHint");
+        BtnPaste.Content = Loc.T("paste");
+
+        LblQuality.Text = Loc.T("lblQuality");
+        var keep = CboQuality.SelectedIndex;
+        for (int i = 0; i < CboQuality.Items.Count; i++)
+            ((ComboBoxItem)CboQuality.Items[i]!).Content = Loc.T("q" + i);
+        CboQuality.SelectedIndex = keep;
+
+        ChkPlaylist.Content = Loc.T("playlist");
+        ChkPlaylist.ToolTip = Loc.T("playlistTip");
+        ChkCookie.Content = Loc.T("cookie");
+        ChkCookie.ToolTip = Loc.T("cookieTip");
+
+        LblFolder.Text = Loc.T("lblFolder");
+        BtnFolder.Content = Loc.T("browse");
+        BtnOpen.Content = Loc.T("openFolder");
+
+        if (_runner is not { IsRunning: true }) BtnDownload.Content = Loc.T("download");
+        BtnCapture.Content = Loc.T("capture");
+        BtnCapture.ToolTip = Loc.T("captureTip");
+
+        LblLogHeader.Text = Loc.T("logHeader");
+        LblLogHint.Text = Loc.T("logHint");
+
+        if (!_statusDirty) LblStatus.Text = Loc.T("ready");
+
+        // nút ngôn ngữ đang chọn thì tô sáng
+        var on = (SolidColorBrush)FindResource("Accent");
+        var off = (SolidColorBrush)FindResource("Line");
+        var onInk = (SolidColorBrush)FindResource("Ink");
+        var offText = (SolidColorBrush)FindResource("Text");
+        bool vi = Loc.Current == Lang.Vi;
+        BtnVi.Background = vi ? on : off;
+        BtnVi.Foreground = vi ? onInk : offText;
+        BtnEn.Background = vi ? off : on;
+        BtnEn.Foreground = vi ? offText : onInk;
+    }
+
+    /// <summary>Đã có thông báo trạng thái riêng thì đừng ghi đè bằng câu "sẵn sàng".</summary>
+    private bool _statusDirty;
 
     private void TryFillFromClipboard()
     {
@@ -84,11 +151,11 @@ public partial class MainWindow : Window
     }
 
     private string SelectedBrowser =>
-        (CboBrowser.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? "edge";
+        (CboBrowser.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "edge";
 
     private void SetBusy(bool busy)
     {
-        BtnDownload.Content = busy ? "✖   HỦY" : "⬇   TẢI XUỐNG";
+        BtnDownload.Content = busy ? Loc.T("cancel") : Loc.T("download");
         BtnDownload.Background = busy ? BadBrush : GoBrush;
         BtnCapture.IsEnabled = !busy;
         BtnUpdate.IsEnabled = !busy;
@@ -139,14 +206,20 @@ public partial class MainWindow : Window
             _captured = win.Chosen;
             _capturedTitle = MediaSniffer.SafeFileName(win.PageTitle);
             TxtUrl.Text = win.Chosen.Url;
-            LblStatus.Text = "✅ Đã lấy link từ trình duyệt. Bấm TẢI XUỐNG.";
+            SetStatus(Loc.T("gotLink"));
         }
+    }
+
+    private void SetStatus(string text)
+    {
+        LblStatus.Text = text;
+        _statusDirty = true;
     }
 
     private async void BtnUpdate_Click(object sender, RoutedEventArgs e)
     {
         if (_runner is { IsRunning: true }) return;
-        await RunAsync(["-U"], "Đang cập nhật yt-dlp lên bản mới nhất...");
+        await RunAsync(["-U"], Loc.T("updating"));
     }
 
     private async void BtnDownload_Click(object sender, RoutedEventArgs e)
@@ -155,32 +228,30 @@ public partial class MainWindow : Window
         if (_runner is { IsRunning: true })
         {
             _runner.Cancel();
-            LblStatus.Text = "Đang hủy...";
+            SetStatus(Loc.T("cancelling"));
             return;
         }
 
         var url = TxtUrl.Text.Trim();
         if (string.IsNullOrEmpty(url) || !url.StartsWith("http"))
         {
-            MessageBox.Show("Hãy dán link video vào ô (bắt đầu bằng http/https).",
-                "Tải Video", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Loc.T("msgNeedUrl"), Loc.T("appName"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         // Link nhúng (Blogger...) yt-dlp không đọc được -> mở player lấy link thật trước
         if (MediaSniffer.IsEmbedPage(url))
         {
-            LblStatus.Text = "Link nhúng — đang mở player để lấy link video thật...";
+            SetStatus(Loc.T("embedBusy"));
             var resolver = new ResolveWindow(url) { Owner = this };
             resolver.ShowDialog();
 
             if (resolver.Result is null)
             {
-                LblStatus.Text = "❌ Không lấy được link video thật từ trang nhúng.";
-                MessageBox.Show(
-                    "Không lấy được link video thật từ trang nhúng này." + Environment.NewLine + Environment.NewLine +
-                    "Cách khác: bấm 🌐 Bắt video từ trang web, mở trang gốc, bấm play rồi chọn link [MP4] hoặc [HLS].",
-                    "Tải Video", MessageBoxButton.OK, MessageBoxImage.Warning);
+                SetStatus(Loc.T("embedFail"));
+                MessageBox.Show(Loc.T("msgEmbedFail"), Loc.T("appName"),
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -189,6 +260,7 @@ public partial class MainWindow : Window
                 _capturedTitle = "video_" + DateTime.Now.ToString("yyyyMMdd_HHmmss");
             url = _captured.Url;
             TxtUrl.Text = url;
+            SetStatus(Loc.T("embedOk"));
         }
 
         var folder = TxtFolder.Text.Trim();
@@ -202,7 +274,7 @@ public partial class MainWindow : Window
             url, folder, CboQuality.SelectedIndex, ChkPlaylist.IsChecked == true,
             ChkCookie.IsChecked == true, SelectedBrowser, _captured, titleForFile);
 
-        await RunAsync(args, "Đang lấy thông tin video...");
+        await RunAsync(args, Loc.T("fetching"));
     }
 
     // ================= chạy yt-dlp =================
@@ -213,7 +285,7 @@ public partial class MainWindow : Window
         TxtLog.Text = "";
         Pb.IsIndeterminate = true;
         Pb.Value = 0;
-        LblStatus.Text = startStatus;
+        SetStatus(startStatus);
         SetBusy(true);
 
         _runner = new YtDlpRunner();
@@ -223,7 +295,7 @@ public partial class MainWindow : Window
             Pb.IsIndeterminate = false;
             Pb.Value = pct;
         });
-        _runner.StageChanged += s => Dispatcher.Invoke(() => LblStatus.Text = s);
+        _runner.StageChanged += s => Dispatcher.Invoke(() => SetStatus(s));
 
         YtDlpResult result;
         try
@@ -233,7 +305,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Pb.IsIndeterminate = false;
-            LblStatus.Text = "❌ Không chạy được yt-dlp: " + ex.Message;
+            SetStatus(Loc.T("cantRun") + ex.Message);
             SetBusy(false);
             return;
         }
@@ -243,18 +315,18 @@ public partial class MainWindow : Window
 
         if (result.Cancelled)
         {
-            LblStatus.Text = "Đã hủy tải.";
+            SetStatus(Loc.T("cancelled"));
         }
         else if (result.Success)
         {
             Pb.Value = 100;
-            LblStatus.Text = string.IsNullOrEmpty(result.SavedFile)
-                ? "✅ Xong! File đã lưu vào thư mục."
-                : "✅ Xong! Đã lưu: " + result.SavedFile;
+            SetStatus(string.IsNullOrEmpty(result.SavedFile)
+                ? Loc.T("done")
+                : Loc.T("doneNamed") + result.SavedFile);
         }
         else
         {
-            LblStatus.Text = "❌ Có lỗi — xem chi tiết bên dưới.";
+            SetStatus(Loc.T("failed"));
             if (!string.IsNullOrWhiteSpace(result.StdErr))
                 AppendLog(Environment.NewLine + "--- LỖI ---" + Environment.NewLine + result.StdErr);
         }

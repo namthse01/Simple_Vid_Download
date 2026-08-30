@@ -8,6 +8,8 @@ public class Settings
 {
     public string? Folder { get; set; }
     public int Quality { get; set; }
+    /// <summary>"vi" hoặc "en"</summary>
+    public string Language { get; set; } = "vi";
 
     public static Settings Load()
     {

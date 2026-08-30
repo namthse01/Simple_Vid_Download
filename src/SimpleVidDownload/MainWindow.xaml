@@ -4,6 +4,7 @@
         Title="Tải Video — dán link là xong" Height="660" Width="880"
         MinHeight="580" MinWidth="780"
         WindowStartupLocation="CenterScreen" Background="{StaticResource Bg}"
+        Foreground="{StaticResource Text}" FontSize="13"
         FontFamily="Segoe UI" TextOptions.TextFormattingMode="Display">
 
   <Grid Margin="20,16,20,18">
@@ -18,13 +19,19 @@
     <!-- ===== đầu trang ===== -->
     <Grid Grid.Row="0" Margin="0,0,0,14">
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-        <TextBlock Text="Tải Video" FontSize="20" FontWeight="Bold"/>
-        <TextBlock Text="dán link là xong" Foreground="{StaticResource Muted}"
-                   FontSize="12.5" Margin="12,3,0,0"/>
+        <TextBlock x:Name="LblAppName" Text="Tải Video" FontSize="20" FontWeight="Bold"
+                   VerticalAlignment="Center"/>
+        <TextBlock x:Name="LblTagline" Text="dán link là xong" Foreground="{StaticResource Muted}"
+                   FontSize="12.5" Margin="12,3,0,0" VerticalAlignment="Center"/>
       </StackPanel>
-      <Button x:Name="BtnUpdate" Content="Cập nhật engine" Style="{StaticResource BtnGhost}"
-              HorizontalAlignment="Right" Padding="13,7" FontSize="12" Click="BtnUpdate_Click"
-              ToolTip="Cập nhật yt-dlp lên bản mới nhất — bấm khi YouTube đột nhiên tải lỗi"/>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+        <Button x:Name="BtnVi" Content="VI" Style="{StaticResource BtnGhost}"
+                Padding="11,7" FontSize="12" Margin="0,0,4,0" Click="BtnLang_Click" Tag="vi"/>
+        <Button x:Name="BtnEn" Content="EN" Style="{StaticResource BtnGhost}"
+                Padding="11,7" FontSize="12" Margin="0,0,10,0" Click="BtnLang_Click" Tag="en"/>
+        <Button x:Name="BtnUpdate" Content="Cập nhật engine" Style="{StaticResource BtnGhost}"
+                Padding="13,7" FontSize="12" Click="BtnUpdate_Click"/>
+      </StackPanel>
     </Grid>
 
     <!-- ===== thẻ nhập liệu ===== -->
@@ -41,15 +48,16 @@
           <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Grid.Column="0" Text="Link video" Style="{StaticResource Lbl}"/>
+        <TextBlock x:Name="LblLink" Grid.Row="0" Grid.Column="0" Text="Link video"
+                   Style="{StaticResource Lbl}"/>
         <Grid Grid.Row="0" Grid.Column="1">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
           <TextBox x:Name="TxtUrl" Grid.Column="0" KeyDown="TxtUrl_KeyDown"/>
-          <TextBlock Grid.Column="0" IsHitTestVisible="False" Margin="12,0,0,0" FontSize="13"
-                     VerticalAlignment="Center" Foreground="{StaticResource Faint}"
+          <TextBlock x:Name="LblUrlHint" Grid.Column="0" IsHitTestVisible="False" Margin="12,0,0,0"
+                     FontSize="13" VerticalAlignment="Center" Foreground="{StaticResource Faint}"
                      Text="Dán link video vào đây rồi bấm Enter...">
             <TextBlock.Style>
               <Style TargetType="TextBlock">
@@ -66,7 +74,7 @@
                   Style="{StaticResource BtnBase}" Margin="8,0,0,0" Click="BtnPaste_Click"/>
         </Grid>
 
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="Chất lượng"
+        <TextBlock x:Name="LblQuality" Grid.Row="1" Grid.Column="0" Text="Chất lượng"
                    Style="{StaticResource Lbl}" Margin="0,14,12,0"/>
         <WrapPanel Grid.Row="1" Grid.Column="1" Margin="0,14,0,0">
           <ComboBox x:Name="CboQuality" Width="194" SelectedIndex="0" Margin="0,0,20,0">
@@ -89,7 +97,7 @@
           </StackPanel>
         </WrapPanel>
 
-        <TextBlock Grid.Row="2" Grid.Column="0" Text="Lưu vào"
+        <TextBlock x:Name="LblFolder" Grid.Row="2" Grid.Column="0" Text="Lưu vào"
                    Style="{StaticResource Lbl}" Margin="0,14,12,0"/>
         <Grid Grid.Row="2" Grid.Column="1" Margin="0,14,0,0">
           <Grid.ColumnDefinitions>
@@ -138,7 +146,7 @@
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
-      <TextBlock Grid.Row="0" Text="NHẬT KÝ" FontSize="11" Margin="2,0,0,7"
+      <TextBlock x:Name="LblLogHeader" Grid.Row="0" Text="NHẬT KÝ" FontSize="11" Margin="2,0,0,7"
                  Foreground="{StaticResource Muted}"/>
       <Border Grid.Row="1" Background="{StaticResource Sunken}" CornerRadius="10" Padding="6">
         <Grid>
@@ -146,7 +154,7 @@
                    Background="Transparent" BorderThickness="0" Padding="8,6"
                    VerticalContentAlignment="Stretch" VerticalScrollBarVisibility="Auto"
                    FontFamily="Consolas" FontSize="11.5" Foreground="{StaticResource Muted}"/>
-          <TextBlock IsHitTestVisible="False" Margin="10,8,0,0" FontSize="12"
+          <TextBlock x:Name="LblLogHint" IsHitTestVisible="False" Margin="10,8,0,0" FontSize="12"
                      VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#585B70"
                      Text="Tiến trình tải sẽ hiện ở đây.">
             <TextBlock.Style>

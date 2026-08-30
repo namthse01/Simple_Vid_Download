@@ -30,6 +30,13 @@ public partial class CaptureWindow : Window
         LstLinks.ItemsSource = _links;
         TxtAddr.Text = string.IsNullOrEmpty(_startUrl) ? "https://" : _startUrl;
 
+        Title = Loc.T("capTitle");
+        LblInfo.Text = Loc.T("capInfo");
+        BtnBack.ToolTip = Loc.T("capBackTip");
+        BtnGo.Content = Loc.T("capGo");
+        BtnUse.Content = Loc.T("capUse");
+        BtnCopy.Content = Loc.T("capCopy");
+
         Loaded += async (_, _) => await InitWebViewAsync();
         Closed += (_, _) => Web.Dispose();
     }
@@ -44,9 +51,8 @@ public partial class CaptureWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show(
-                "Không khởi động được trình duyệt nhúng (WebView2)." + Environment.NewLine +
-                "Máy có thể chưa cài WebView2 Runtime." + Environment.NewLine + Environment.NewLine + ex.Message,
-                "Bắt video", MessageBoxButton.OK, MessageBoxImage.Error);
+                Loc.T("msgNoWebView") + Environment.NewLine + Environment.NewLine + ex.Message,
+                Loc.T("capTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
             Close();
             return;
         }
@@ -101,7 +107,7 @@ public partial class CaptureWindow : Window
         {
             if (!_seen.Add(link.Url)) return;
             _links.Add(link);
-            LblCount.Text = $"{_links.Count} link bắt được";
+            LblCount.Text = string.Format(Loc.T("capCount"), _links.Count);
             if (LstLinks.SelectedIndex < 0) LstLinks.SelectedIndex = 0;
         });
     }
@@ -142,10 +148,8 @@ public partial class CaptureWindow : Window
         var link = CurrentSelection;
         if (link is null)
         {
-            MessageBox.Show(
-                "Chưa bắt được link nào." + Environment.NewLine +
-                "Hãy bấm ▶ play video trong trang rồi chờ vài giây.",
-                "Bắt video", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(Loc.T("msgNoLink"), Loc.T("capTitle"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
