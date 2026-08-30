@@ -1,20 +1,23 @@
 # =============================================================
-#  Tải Video — cài đặt engine vào thư mục bin\
-#  Chạy 1 lần sau khi clone:  chuột phải > Run with PowerShell
-#  (hoặc: powershell -ExecutionPolicy Bypass -File setup.ps1)
+#  Tải Video — cài đặt: tải engine + build app + tạo shortcut
+#  Chạy 1 lần sau khi clone:
+#     powershell -ExecutionPolicy Bypass -File setup.ps1
 # =============================================================
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $bin  = Join-Path $root 'bin'
+$app  = Join-Path $root 'app'
+$proj = Join-Path $root 'src\SimpleVidDownload\SimpleVidDownload.csproj'
 $tmp  = Join-Path $env:TEMP ('taivideo_setup_' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $bin, $tmp -Force | Out-Null
 
 function Say([string]$m) { Write-Host $m -ForegroundColor Cyan }
 function Ok ([string]$m) { Write-Host ('  OK  ' + $m) -ForegroundColor Green }
+function Warn([string]$m) { Write-Host ('  !!  ' + $m) -ForegroundColor Yellow }
 
 try {
-    # ---- 1. yt-dlp: engine tải video ----
+    # ---- 1. yt-dlp: engine tai video ----
     Say 'Dang tai yt-dlp...'
     Invoke-WebRequest -Uri 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' `
         -OutFile (Join-Path $bin 'yt-dlp.exe') -UseBasicParsing
@@ -41,20 +44,19 @@ try {
     Copy-Item (Join-Path $tmp 'deno\deno.exe') (Join-Path $bin 'deno.exe') -Force
     Ok ((& (Join-Path $bin 'deno.exe') --version | Select-Object -First 1))
 
-    # ---- 4. WebView2 SDK: trinh duyet nhung de bat link video ----
-    Say 'Dang tai WebView2 SDK...'
-    $wvVer = '1.0.2792.45'
-    $wvPkg = Join-Path $tmp 'wv2.zip'
-    Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/microsoft.web.webview2/$wvVer/microsoft.web.webview2.$wvVer.nupkg" `
-        -OutFile $wvPkg -UseBasicParsing
-    Expand-Archive -Path $wvPkg -DestinationPath (Join-Path $tmp 'wv2') -Force
-    foreach ($dll in 'Microsoft.Web.WebView2.Core.dll', 'Microsoft.Web.WebView2.WinForms.dll', 'Microsoft.Web.WebView2.Wpf.dll') {
-        Copy-Item (Join-Path $tmp "wv2\lib\net462\$dll") (Join-Path $bin $dll) -Force
+    # ---- 4. Build app C# ----
+    Say 'Dang build app...'
+    $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
+    if (-not $dotnet) {
+        Warn 'Chua co .NET SDK. Cai bang lenh:  winget install Microsoft.DotNet.SDK.10'
+        Warn 'Hoac tai tai: https://dotnet.microsoft.com/download'
+        throw 'Thieu .NET SDK'
     }
-    Copy-Item (Join-Path $tmp 'wv2\runtimes\win-x64\native\WebView2Loader.dll') (Join-Path $bin 'WebView2Loader.dll') -Force
-    Ok 'WebView2 SDK'
+    & dotnet publish $proj -c Release -o $app --nologo -v q
+    if ($LASTEXITCODE -ne 0) { throw 'Build that bai' }
+    Ok ('app\TaiVideo.exe')
 
-    # ---- 5. Kiem tra WebView2 Runtime co san tren may chua ----
+    # ---- 5. WebView2 Runtime (can cho che do bat video) ----
     $k = @(
         'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}',
         'HKLM:\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
@@ -62,12 +64,22 @@ try {
     if ($k) {
         Ok ('WebView2 Runtime ' + (Get-ItemProperty $k).pv)
     } else {
-        Write-Host '  !!  Chua co WebView2 Runtime (chuc nang "Bat video tu trang web" se khong chay).' -ForegroundColor Yellow
-        Write-Host '      Tai tai: https://developer.microsoft.com/microsoft-edge/webview2/' -ForegroundColor Yellow
+        Warn 'Chua co WebView2 Runtime (chuc nang "Bat video tu trang web" se khong chay).'
+        Warn 'Tai tai: https://developer.microsoft.com/microsoft-edge/webview2/'
     }
 
+    # ---- 6. Shortcut ngoai Desktop ----
+    Say 'Dang tao shortcut...'
+    $ws = New-Object -ComObject WScript.Shell
+    $lnk = $ws.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'Tai Video.lnk'))
+    $lnk.TargetPath = Join-Path $app 'TaiVideo.exe'
+    $lnk.WorkingDirectory = $app
+    $lnk.Description = 'Tai Video - dan link la xong'
+    $lnk.Save()
+    Ok 'Shortcut "Tai Video" tren Desktop'
+
     Write-Host ''
-    Write-Host 'XONG! Chay TaiVideo.bat de mo app.' -ForegroundColor Green
+    Write-Host 'XONG! Nhay dup shortcut "Tai Video" tren Desktop de mo app.' -ForegroundColor Green
 }
 finally {
     Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue

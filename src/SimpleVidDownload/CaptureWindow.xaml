@@ -1,0 +1,75 @@
+<Window x:Class="SimpleVidDownload.CaptureWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Bắt video từ trang web" Height="780" Width="1060"
+        MinHeight="560" MinWidth="820"
+        WindowStartupLocation="CenterScreen" Background="{StaticResource Bg}"
+        FontFamily="Segoe UI" TextOptions.TextFormattingMode="Display">
+
+  <Grid Margin="16,14,16,16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- thanh địa chỉ -->
+    <Grid Grid.Row="0" Margin="0,0,0,12">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <Button x:Name="BtnBack" Grid.Column="0" Content="◀" Width="42"
+              Style="{StaticResource BtnGhost}" FontWeight="Bold"
+              Click="BtnBack_Click" ToolTip="Quay lại trang trước"/>
+      <TextBox x:Name="TxtAddr" Grid.Column="1" Margin="8,0,8,0" KeyDown="TxtAddr_KeyDown"/>
+      <Button x:Name="BtnGo" Grid.Column="2" Content="Đi" Width="56"
+              Style="{StaticResource BtnBase}" Click="BtnGo_Click"/>
+    </Grid>
+
+    <!-- khung trình duyệt -->
+    <Border Grid.Row="1" Background="#000000" CornerRadius="10"
+            BorderBrush="{StaticResource Line}" BorderThickness="1">
+      <Border CornerRadius="9" ClipToBounds="True" Background="#000000">
+        <wv2:WebView2 x:Name="Web"/>
+      </Border>
+    </Border>
+
+    <!-- hướng dẫn + số link -->
+    <Grid Grid.Row="2" Margin="2,12,2,10">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock x:Name="LblInfo" Grid.Column="0" Foreground="{StaticResource Warn}" FontSize="12.5"
+                 VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,16,0"
+                 Text="Mở trang video và chờ vài giây — link sẽ tự hiện bên dưới. Nếu chưa thấy thì bấm ▶ play một cái."/>
+      <TextBlock x:Name="LblCount" Grid.Column="1" Foreground="{StaticResource Muted}"
+                 FontSize="12.5" VerticalAlignment="Center"/>
+    </Grid>
+
+    <!-- danh sách link + nút -->
+    <Grid Grid.Row="3">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <Border Grid.Column="0" Background="{StaticResource Sunken}" CornerRadius="10" Padding="3">
+        <ListBox x:Name="LstLinks" Height="104" FontFamily="Consolas" FontSize="11.5"
+                 Background="Transparent" BorderThickness="0" Foreground="{StaticResource Text}"
+                 DisplayMemberPath="Display"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+      </Border>
+      <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="10,0,0,0">
+        <Button x:Name="BtnUse" Content="⬇  Dùng link này để TẢI"
+                Style="{StaticResource BtnBase}" Background="{StaticResource Go}"
+                Padding="16,11" Click="BtnUse_Click"/>
+        <Button x:Name="BtnCopy" Content="Copy link" Style="{StaticResource BtnGhost}"
+                Margin="0,8,0,0" Padding="16,8" Click="BtnCopy_Click"/>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</Window>

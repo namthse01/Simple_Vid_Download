@@ -1,0 +1,255 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ===== bảng màu (Catppuccin Mocha) ===== -->
+  <SolidColorBrush x:Key="Bg"     Color="#1E1E2E"/>
+  <SolidColorBrush x:Key="Card"   Color="#252537"/>
+  <SolidColorBrush x:Key="Sunken" Color="#181825"/>
+  <SolidColorBrush x:Key="Field"  Color="#313244"/>
+  <SolidColorBrush x:Key="Line"   Color="#45475A"/>
+  <SolidColorBrush x:Key="Text"   Color="#CDD6F4"/>
+  <SolidColorBrush x:Key="Muted"  Color="#9399B2"/>
+  <SolidColorBrush x:Key="Faint"  Color="#6C7086"/>
+  <SolidColorBrush x:Key="Accent" Color="#89B4FA"/>
+  <SolidColorBrush x:Key="Go"     Color="#A6E3A1"/>
+  <SolidColorBrush x:Key="Warn"   Color="#F9E2AF"/>
+  <SolidColorBrush x:Key="Bad"    Color="#F38BA8"/>
+  <SolidColorBrush x:Key="Ink"    Color="#11111B"/>
+
+  <!-- ===== nút bấm bo góc ===== -->
+  <Style x:Key="BtnBase" TargetType="Button">
+    <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+    <Setter Property="Background" Value="{StaticResource Accent}"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Padding" Value="16,9"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="SnapsToDevicePixels" Value="True"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Border x:Name="bd" CornerRadius="7" Background="{TemplateBinding Background}"
+                  Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="bd" Property="Opacity" Value="0.86"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="bd" Property="Opacity" Value="0.68"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter TargetName="bd" Property="Opacity" Value="0.4"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="BtnGhost" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+    <Setter Property="Background" Value="{StaticResource Line}"/>
+    <Setter Property="Foreground" Value="{StaticResource Text}"/>
+    <Setter Property="FontWeight" Value="Normal"/>
+  </Style>
+
+  <!-- ===== ô nhập bo góc ===== -->
+  <Style TargetType="TextBox">
+    <Setter Property="Background" Value="{StaticResource Field}"/>
+    <Setter Property="Foreground" Value="{StaticResource Text}"/>
+    <Setter Property="CaretBrush" Value="{StaticResource Text}"/>
+    <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="Padding" Value="10,8"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="TextBox">
+          <Border x:Name="bd" CornerRadius="7" Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  Padding="{TemplateBinding Padding}">
+            <ScrollViewer x:Name="PART_ContentHost"
+                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+              <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Text}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+
+  <Style x:Key="Lbl" TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="HorizontalAlignment" Value="Right"/>
+    <Setter Property="Margin" Value="0,0,12,0"/>
+  </Style>
+
+  <!-- ===== ô tick tự vẽ cho hợp tông tối ===== -->
+  <Style TargetType="CheckBox">
+    <Setter Property="Foreground" Value="{StaticResource Text}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="CheckBox">
+          <StackPanel Orientation="Horizontal" Background="Transparent">
+            <Border x:Name="box" Width="17" Height="17" CornerRadius="5"
+                    Background="{StaticResource Field}" BorderBrush="{StaticResource Line}"
+                    BorderThickness="1">
+              <Path x:Name="tick" Data="M 3.5,8.5 L 6.5,11.5 L 13,4.5" Stroke="#11111B"
+                    StrokeThickness="2" StrokeEndLineCap="Round" StrokeStartLineCap="Round"
+                    Visibility="Collapsed"/>
+            </Border>
+            <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center"/>
+          </StackPanel>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="box" Property="Background" Value="{StaticResource Accent}"/>
+              <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource Accent}"/>
+              <Setter TargetName="tick" Property="Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource Accent}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- ===== ComboBox: phải tự vẽ, WPF mặc định không nhận màu nền ===== -->
+  <Style x:Key="CbToggle" TargetType="ToggleButton">
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToggleButton">
+          <Border x:Name="bd" CornerRadius="7" Background="{StaticResource Field}"
+                  BorderBrush="{StaticResource Line}" BorderThickness="1" SnapsToDevicePixels="True">
+            <Path x:Name="arw" HorizontalAlignment="Right" VerticalAlignment="Center"
+                  Margin="0,0,11,0" Data="M 0,0 L 4.5,5 L 9,0"
+                  Stroke="{StaticResource Muted}" StrokeThickness="1.7"
+                  StrokeEndLineCap="Round" StrokeStartLineCap="Round"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+              <Setter TargetName="arw" Property="Stroke" Value="{StaticResource Text}"/>
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="ComboBoxItem">
+    <Setter Property="Foreground" Value="{StaticResource Text}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Padding" Value="11,7"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ComboBoxItem">
+          <Border x:Name="ib" Background="Transparent" CornerRadius="5"
+                  Padding="{TemplateBinding Padding}" Margin="3,1">
+            <ContentPresenter/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+              <Setter TargetName="ib" Property="Background" Value="{StaticResource Line}"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="ib" Property="Background" Value="{StaticResource Accent}"/>
+              <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="ComboBox">
+    <Setter Property="Foreground" Value="{StaticResource Text}"/>
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Height" Value="34"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ComboBox">
+          <Grid>
+            <ToggleButton Style="{StaticResource CbToggle}" Focusable="False" ClickMode="Press"
+                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
+                                      RelativeSource={RelativeSource TemplatedParent}}"/>
+            <ContentPresenter IsHitTestVisible="False" Margin="11,0,28,0"
+                              VerticalAlignment="Center" HorizontalAlignment="Left"
+                              Content="{TemplateBinding SelectionBoxItem}"
+                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                              TextElement.Foreground="{StaticResource Text}"/>
+            <Popup x:Name="PART_Popup" Placement="Bottom" AllowsTransparency="True"
+                   Focusable="False" PopupAnimation="Fade" VerticalOffset="4"
+                   IsOpen="{TemplateBinding IsDropDownOpen}">
+              <Border Background="{StaticResource Field}" BorderBrush="{StaticResource Line}"
+                      BorderThickness="1" CornerRadius="8" Padding="2"
+                      MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                      MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                <ScrollViewer>
+                  <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                </ScrollViewer>
+              </Border>
+            </Popup>
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style TargetType="ProgressBar">
+    <Setter Property="Background" Value="{StaticResource Field}"/>
+    <Setter Property="Foreground" Value="{StaticResource Go}"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Height" Value="8"/>
+  </Style>
+
+  <Style TargetType="ListBoxItem">
+    <Setter Property="Foreground" Value="{StaticResource Text}"/>
+    <Setter Property="Padding" Value="9,6"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ListBoxItem">
+          <Border x:Name="ib" Background="Transparent" CornerRadius="5"
+                  Padding="{TemplateBinding Padding}" Margin="3,1">
+            <ContentPresenter/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="ib" Property="Background" Value="#2A2A3E"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="ib" Property="Background" Value="{StaticResource Accent}"/>
+              <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+</ResourceDictionary>

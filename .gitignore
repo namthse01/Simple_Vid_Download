@@ -1,6 +1,9 @@
 # Engine tải về (rất nặng: ffmpeg/ffprobe ~145MB mỗi file, vượt giới hạn 100MB của GitHub)
-# Chạy setup.ps1 để tải lại.
+# Cũng khớp luôn bin\ của bản build C#. Chạy setup.ps1 để dựng lại tất cả.
 bin/
+obj/
+app/
+*.user
 
 # Hồ sơ trình duyệt nhúng — CHỨA COOKIE ĐĂNG NHẬP, tuyệt đối không đưa lên git
 wvdata/
@@ -13,3 +16,4 @@ settings.json
 
 # Editor
 .vscode/
+.vs/

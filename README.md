@@ -13,8 +13,8 @@ browser extension — including the part where it sniffs the video out of a page
 
 ### What it is
 
-A single-window Windows app: paste a URL, pick a quality, hit download. No Python, no command
-line, nothing else to install.
+A single-window Windows app (C# / WPF, ships as a native `.exe`): paste a URL, pick a quality, hit
+download. No command line, no Python.
 
 Under the hood it drives **yt-dlp** (open source, supports 1000+ sites: YouTube, Facebook, TikTok,
 X/Twitter, Instagram, Twitch, Bilibili, SoundCloud, Vimeo, Dailymotion…) plus **ffmpeg** to merge
@@ -23,30 +23,32 @@ video and audio at full quality.
 What it adds on top of plain yt-dlp is **Capture mode**: an embedded browser that watches network
 traffic and grabs the stream URL out of pages yt-dlp doesn't know how to parse.
 
-### Install (once, after cloning)
-
-The `bin\` folder holds the engines (~390 MB), so it is **not** committed. Fetch it with:
+### Build and install (once, after cloning)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File setup.ps1
 ```
 
-That downloads yt-dlp, ffmpeg + ffprobe, deno, and the WebView2 SDK from their official release
-pages, then checks whether the WebView2 Runtime is present (Windows 11 ships it with Edge).
+That one script does everything: downloads yt-dlp, ffmpeg + ffprobe and deno from their official
+release pages into `bin\`, builds the app into `app\`, checks for the WebView2 Runtime, and puts a
+**Tai Video** shortcut on your Desktop.
 
-**Requirements:** Windows 10/11 and PowerShell 5.1 (both built in).
+`bin\` is not committed because the engines total ~390 MB and ffmpeg alone exceeds GitHub's
+100 MB per-file limit.
+
+**Requirements:** Windows 10/11 and the [.NET SDK 10](https://dotnet.microsoft.com/download)
+(`winget install Microsoft.DotNet.SDK.10`). WebView2 Runtime ships with Edge on Windows 11.
+
+To rebuild after changing the code:
+
+```powershell
+dotnet publish src/SimpleVidDownload -c Release -o app
+```
 
 ### Running it
 
-Double-click **`TaiVideo.vbs`**. If your clipboard already holds a URL, the app fills it in for you.
-
-Why a `.vbs` launcher: Windows 11 uses Windows Terminal as its default console host, and Terminal
-ignores PowerShell's `-WindowStyle Hidden`. Starting the script directly therefore leaves a black
-console window sitting behind the app and taking up a taskbar slot. Going through `wscript` creates
-the process hidden from the outset, so only the app window ever appears.
-
-`TaiVideo.bat` still works and simply forwards to the `.vbs`, but a `.bat` always opens a console of
-its own, so you get a brief flash. Prefer the `.vbs`.
+Double-click the **Tai Video** shortcut, or `app\TaiVideo.exe`. If your clipboard already holds a
+URL, the app fills it in for you.
 
 ### Features
 
@@ -132,15 +134,24 @@ non-Latin text, so the app passes `--encoding utf-8`. The usual suspects — `PY
 ### Layout
 
 ```
-TaiVideo\
-├─ TaiVideo.vbs      ← double-click to run (no console window)
-├─ TaiVideo.bat      ← same thing, but flashes a console briefly
-├─ TaiVideo.ps1      ← the whole app (PowerShell + WPF)
-├─ setup.ps1         ← downloads the engines into bin\
-├─ bin\              ← yt-dlp, ffmpeg, ffprobe, deno, WebView2 SDK (not in git)
-├─ logs\             ← one log per download (not in git)
-├─ wvdata\           ← embedded browser profile, holds cookies (not in git)
-└─ settings.json     ← remembers your folder and quality (not in git)
+Simple_Vid_Download\
+├─ src\SimpleVidDownload\        ← the source (C# / WPF)
+│  ├─ MainWindow.xaml(.cs)       ← main window
+│  ├─ CaptureWindow.xaml(.cs)    ← embedded browser that sniffs links
+│  ├─ ResolveWindow.xaml(.cs)    ← resolves embed pages into real streams
+│  ├─ Theme.xaml                 ← one style sheet shared by all three windows
+│  └─ Services\
+│     ├─ MediaSniffer.cs         ← what counts as a video link
+│     ├─ YtDlpRunner.cs          ← runs yt-dlp, parses progress
+│     ├─ WebViewHeaders.cs       ← reads Referer / Cookie / User-Agent
+│     ├─ AppPaths.cs             ← locates bin\ and the working folders
+│     └─ Settings.cs             ← remembers folder + quality
+├─ setup.ps1                     ← downloads engines, builds, makes the shortcut
+├─ app\                          ← build output, TaiVideo.exe (not in git)
+├─ bin\                          ← yt-dlp, ffmpeg, ffprobe, deno (not in git)
+├─ logs\                         ← one log per download (not in git)
+├─ wvdata\                       ← embedded browser profile, holds cookies (not in git)
+└─ settings.json                 ← your folder and quality (not in git)
 ```
 
 ### Please use it responsibly
@@ -154,8 +165,9 @@ keep, or material whose licence permits it. Respect each site's terms and your l
 
 ### Đây là gì
 
-Phần mềm tải video cho Windows, tương đương extension **Video DownloadHelper** nhưng mạnh hơn:
-dán link → chọn chất lượng → bấm **TẢI XUỐNG**. Không cần cài Python hay gì thêm.
+Phần mềm tải video cho Windows (C# / WPF, chạy dưới dạng `.exe` gốc), tương đương extension
+**Video DownloadHelper** nhưng mạnh hơn: dán link → chọn chất lượng → bấm **TẢI XUỐNG**.
+Không cần dòng lệnh, không cần Python.
 
 Engine bên dưới là **yt-dlp** (mã nguồn mở, hỗ trợ **hơn 1000 trang web**: YouTube, Facebook,
 TikTok, X/Twitter, Instagram, Twitch, Bilibili, SoundCloud, Vimeo, Dailymotion...) và **ffmpeg**
@@ -166,28 +178,29 @@ và chộp link stream ngay cả với những trang yt-dlp không đọc đư�
 
 ### Cài đặt (chỉ làm 1 lần sau khi clone)
 
-Thư mục `bin\` chứa engine (~390 MB) nên **không** được đưa lên git. Chạy script này để tải về:
-
 ```powershell
 powershell -ExecutionPolicy Bypass -File setup.ps1
 ```
 
-Script tự tải yt-dlp, ffmpeg + ffprobe, deno và WebView2 SDK từ trang phát hành chính thức, rồi
-kiểm tra máy đã có WebView2 Runtime chưa (Windows 11 thường có sẵn theo Edge).
+Một script lo hết: tải yt-dlp, ffmpeg + ffprobe, deno từ trang phát hành chính thức về `bin\`,
+build app ra `app\`, kiểm tra WebView2 Runtime, rồi tạo shortcut **Tai Video** ngoài Desktop.
 
-**Yêu cầu:** Windows 10/11, PowerShell 5.1 (đều có sẵn).
+`bin\` không đưa lên git vì engine nặng tổng cộng ~390 MB, riêng ffmpeg đã vượt giới hạn 100 MB
+mỗi file của GitHub.
+
+**Yêu cầu:** Windows 10/11 và [.NET SDK 10](https://dotnet.microsoft.com/download)
+(`winget install Microsoft.DotNet.SDK.10`). WebView2 Runtime có sẵn theo Edge trên Windows 11.
+
+Sửa code xong thì build lại bằng:
+
+```powershell
+dotnet publish src/SimpleVidDownload -c Release -o app
+```
 
 ### Cách chạy
 
-Nháy đúp **`TaiVideo.vbs`**. Nếu clipboard đang có sẵn link thì app tự điền luôn vào ô.
-
-Vì sao phải qua file `.vbs`: Windows 11 dùng Windows Terminal làm console mặc định, mà Terminal thì
-**bỏ qua** cờ `-WindowStyle Hidden` của PowerShell. Chạy thẳng script sẽ để lại một cửa sổ đen thui
-nằm sau app và chiếm một ô trên thanh tác vụ. Chạy qua `wscript` thì tiến trình được tạo ở chế độ ẩn
-ngay từ đầu, nên chỉ hiện đúng cửa sổ app.
-
-`TaiVideo.bat` vẫn dùng được (nó gọi sang `.vbs`), nhưng file `.bat` luôn tự mở một console nên sẽ
-nháy một cái. Cứ dùng `.vbs` cho gọn.
+Nháy đúp shortcut **Tai Video**, hoặc `app\TaiVideo.exe`. Nếu clipboard đang có sẵn link thì app
+tự điền luôn vào ô.
 
 ### Các tính năng
 
@@ -270,15 +283,24 @@ thị — dòng `✅ Xong! Đã lưu: <tên file>` ở thanh trạng thái mới
 ### Cấu trúc thư mục
 
 ```
-TaiVideo\
-├─ TaiVideo.vbs      ← nháy đúp để chạy (không hiện console)
-├─ TaiVideo.bat      ← cũng chạy được, nhưng nháy console một cái
-├─ TaiVideo.ps1      ← toàn bộ app (PowerShell + WPF)
-├─ setup.ps1         ← tải engine về thư mục bin\
-├─ bin\              ← yt-dlp, ffmpeg, ffprobe, deno, WebView2 SDK (không đưa lên git)
-├─ logs\             ← log mỗi lần tải (không đưa lên git)
-├─ wvdata\           ← hồ sơ trình duyệt nhúng, chứa cookie (không đưa lên git)
-└─ settings.json     ← nhớ thư mục lưu + chất lượng đã chọn (không đưa lên git)
+Simple_Vid_Download\
+├─ src\SimpleVidDownload\        ← mã nguồn (C# / WPF)
+│  ├─ MainWindow.xaml(.cs)       ← cửa sổ chính
+│  ├─ CaptureWindow.xaml(.cs)    ← trình duyệt nhúng để bắt link
+│  ├─ ResolveWindow.xaml(.cs)    ← giải mã link nhúng ra stream thật
+│  ├─ Theme.xaml                 ← một bộ style dùng chung cho cả ba cửa sổ
+│  └─ Services\
+│     ├─ MediaSniffer.cs         ← quyết định link nào là video
+│     ├─ YtDlpRunner.cs          ← chạy yt-dlp, đọc tiến trình
+│     ├─ WebViewHeaders.cs       ← đọc Referer / Cookie / User-Agent
+│     ├─ AppPaths.cs             ← tìm bin\ và các thư mục làm việc
+│     └─ Settings.cs             ← nhớ thư mục lưu + chất lượng
+├─ setup.ps1                     ← tải engine, build, tạo shortcut
+├─ app\                          ← bản build, TaiVideo.exe (không đưa lên git)
+├─ bin\                          ← yt-dlp, ffmpeg, ffprobe, deno (không đưa lên git)
+├─ logs\                         ← log mỗi lần tải (không đưa lên git)
+├─ wvdata\                       ← hồ sơ trình duyệt nhúng, chứa cookie (không đưa lên git)
+└─ settings.json                 ← thư mục lưu + chất lượng đã chọn (không đưa lên git)
 ```
 
 ### Dùng cho tử tế nhé
