@@ -4,7 +4,7 @@
         Title="Tải Video — dán link là xong" Height="660" Width="880"
         MinHeight="580" MinWidth="780"
         WindowStartupLocation="CenterScreen" Background="{StaticResource Bg}"
-        Foreground="{StaticResource Text}" FontSize="13"
+        Foreground="{StaticResource Text}" FontSize="13" Icon="appicon.ico"
         FontFamily="Segoe UI" TextOptions.TextFormattingMode="Display">
 
   <Grid Margin="20,16,20,18">

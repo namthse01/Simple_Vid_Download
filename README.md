@@ -1,3 +1,5 @@
+<img src="docs/logo.png" width="88" alt="DragonCloud">
+
 # Simple Vid Download
 
 Paste a link, get the video. A small Windows app that works like the **Video DownloadHelper**
@@ -159,6 +161,13 @@ Simple_Vid_Download\
 └─ settings.json                 ← your folder and quality (not in git)
 ```
 
+### About the icon
+
+The **DragonCloud** mark is hand-drawn by [@namthse01](https://github.com/namthse01)
+([original sketch](docs/icon-source-drawing.png)). For the app icon the outline was filled into a
+single solid silhouette and the cloud redrawn as clean overlapping circles, so it still reads at
+16×16 on a taskbar.
+
 ### Please use it responsibly
 
 Download things you have the right to download — your own uploads, content you are licensed to
@@ -308,6 +317,13 @@ Simple_Vid_Download\
 ├─ wvdata\                       ← hồ sơ trình duyệt nhúng, chứa cookie (không đưa lên git)
 └─ settings.json                 ← thư mục lưu + chất lượng đã chọn (không đưa lên git)
 ```
+
+### Về cái icon
+
+Hình **DragonCloud** do [@namthse01](https://github.com/namthse01) tự vẽ tay
+([bản gốc](docs/icon-source-drawing.png)). Khi làm icon, phần trong đường viền được tô đặc thành một
+khối duy nhất và đám mây vẽ lại bằng mấy vòng tròn chồng nhau cho sạch — để thu về 16×16 trên thanh
+tác vụ vẫn nhìn ra hình.
 
 ### Dùng cho tử tế nhé
 
