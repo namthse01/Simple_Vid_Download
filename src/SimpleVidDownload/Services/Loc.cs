@@ -16,8 +16,8 @@ public static class Loc
     private static readonly Dictionary<string, string[]> S = new()
     {
         // --- cửa sổ chính ---
-        ["title"]        = ["Tải Video — dán link là xong", "Video Downloader — paste a link, done"],
-        ["appName"]      = ["Tải Video", "Video Downloader"],
+        ["title"]        = ["DCDownload — dán link là xong", "DCDownload — paste a link, done"],
+        ["appName"]      = ["DCDownload", "DCDownload"],
         ["tagline"]      = ["dán link là xong", "paste a link, done"],
         ["update"]       = ["Cập nhật engine", "Update engine"],
         ["updateTip"]    = ["Cập nhật yt-dlp lên bản mới nhất — bấm khi YouTube đột nhiên tải lỗi",

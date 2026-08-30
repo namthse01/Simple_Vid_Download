@@ -7,10 +7,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
 
-    <AssemblyName>TaiVideo</AssemblyName>
+    <AssemblyName>DCDownload</AssemblyName>
     <RootNamespace>SimpleVidDownload</RootNamespace>
-    <Product>Tải Video</Product>
-    <AssemblyTitle>Tải Video — dán link là xong</AssemblyTitle>
+    <Product>DCDownload</Product>
+    <AssemblyTitle>DCDownload — DragonCloud Download</AssemblyTitle>
+    <Description>Tải video từ link — DragonCloud Download</Description>
     <Version>2.0.0</Version>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <!-- icon DragonCloud: hien tren file .exe, thanh tac vu, Explorer -->

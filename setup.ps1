@@ -54,7 +54,7 @@ try {
     }
     & dotnet publish $proj -c Release -o $app --nologo -v q
     if ($LASTEXITCODE -ne 0) { throw 'Build that bai' }
-    Ok ('app\TaiVideo.exe')
+    Ok ('app\DCDownload.exe')
 
     # ---- 5. WebView2 Runtime (can cho che do bat video) ----
     $k = @(
@@ -71,15 +71,16 @@ try {
     # ---- 6. Shortcut ngoai Desktop ----
     Say 'Dang tao shortcut...'
     $ws = New-Object -ComObject WScript.Shell
-    $lnk = $ws.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'Tai Video.lnk'))
-    $lnk.TargetPath = Join-Path $app 'TaiVideo.exe'
+    $lnk = $ws.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'DCDownload.lnk'))
+    $lnk.TargetPath = Join-Path $app 'DCDownload.exe'
     $lnk.WorkingDirectory = $app
-    $lnk.Description = 'Tai Video - dan link la xong'
+    $lnk.IconLocation = (Join-Path $app 'DCDownload.exe') + ',0'
+    $lnk.Description = 'DCDownload - DragonCloud Download'
     $lnk.Save()
-    Ok 'Shortcut "Tai Video" tren Desktop'
+    Ok 'Shortcut "DCDownload" tren Desktop'
 
     Write-Host ''
-    Write-Host 'XONG! Nhay dup shortcut "Tai Video" tren Desktop de mo app.' -ForegroundColor Green
+    Write-Host 'XONG! Nhay dup shortcut "DCDownload" tren Desktop de mo app.' -ForegroundColor Green
 }
 finally {
     Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue

@@ -1,6 +1,8 @@
 <img src="docs/logo.png" width="88" alt="DragonCloud">
 
-# Simple Vid Download
+# DCDownload
+
+*DragonCloud Download*
 
 Paste a link, get the video. A small Windows app that works like the **Video DownloadHelper**
 browser extension — including the part where it sniffs the video out of a page that hides it.
@@ -33,7 +35,7 @@ powershell -ExecutionPolicy Bypass -File setup.ps1
 
 That one script does everything: downloads yt-dlp, ffmpeg + ffprobe and deno from their official
 release pages into `bin\`, builds the app into `app\`, checks for the WebView2 Runtime, and puts a
-**Tai Video** shortcut on your Desktop.
+**DCDownload** shortcut on your Desktop.
 
 `bin\` is not committed because the engines total ~390 MB and ffmpeg alone exceeds GitHub's
 100 MB per-file limit.
@@ -49,7 +51,7 @@ dotnet publish src/SimpleVidDownload -c Release -o app
 
 ### Running it
 
-Double-click the **Tai Video** shortcut, or `app\TaiVideo.exe`. If your clipboard already holds a
+Double-click the **DCDownload** shortcut, or `app\DCDownload.exe`. If your clipboard already holds a
 URL, the app fills it in for you.
 
 The whole interface speaks English too — hit **EN** in the header:
@@ -154,7 +156,7 @@ Simple_Vid_Download\
 │     ├─ AppPaths.cs             ← locates bin\ and the working folders
 │     └─ Settings.cs             ← remembers folder + quality
 ├─ setup.ps1                     ← downloads engines, builds, makes the shortcut
-├─ app\                          ← build output, TaiVideo.exe (not in git)
+├─ app\                          ← build output, DCDownload.exe (not in git)
 ├─ bin\                          ← yt-dlp, ffmpeg, ffprobe, deno (not in git)
 ├─ logs\                         ← one log per download (not in git)
 ├─ wvdata\                       ← embedded browser profile, holds cookies (not in git)
@@ -197,7 +199,7 @@ powershell -ExecutionPolicy Bypass -File setup.ps1
 ```
 
 Một script lo hết: tải yt-dlp, ffmpeg + ffprobe, deno từ trang phát hành chính thức về `bin\`,
-build app ra `app\`, kiểm tra WebView2 Runtime, rồi tạo shortcut **Tai Video** ngoài Desktop.
+build app ra `app\`, kiểm tra WebView2 Runtime, rồi tạo shortcut **DCDownload** ngoài Desktop.
 
 `bin\` không đưa lên git vì engine nặng tổng cộng ~390 MB, riêng ffmpeg đã vượt giới hạn 100 MB
 mỗi file của GitHub.
@@ -213,7 +215,7 @@ dotnet publish src/SimpleVidDownload -c Release -o app
 
 ### Cách chạy
 
-Nháy đúp shortcut **Tai Video**, hoặc `app\TaiVideo.exe`. Nếu clipboard đang có sẵn link thì app
+Nháy đúp shortcut **DCDownload**, hoặc `app\DCDownload.exe`. Nếu clipboard đang có sẵn link thì app
 tự điền luôn vào ô.
 
 ### Các tính năng
@@ -311,7 +313,7 @@ Simple_Vid_Download\
 │     ├─ AppPaths.cs             ← tìm bin\ và các thư mục làm việc
 │     └─ Settings.cs             ← nhớ thư mục lưu + chất lượng
 ├─ setup.ps1                     ← tải engine, build, tạo shortcut
-├─ app\                          ← bản build, TaiVideo.exe (không đưa lên git)
+├─ app\                          ← bản build, DCDownload.exe (không đưa lên git)
 ├─ bin\                          ← yt-dlp, ffmpeg, ffprobe, deno (không đưa lên git)
 ├─ logs\                         ← log mỗi lần tải (không đưa lên git)
 ├─ wvdata\                       ← hồ sơ trình duyệt nhúng, chứa cookie (không đưa lên git)
