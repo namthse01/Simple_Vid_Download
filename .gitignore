@@ -1,23 +1,15 @@
-### AL ###
-#Template for AL projects for Dynamics 365 Business Central
-#launch.json folder
+# Engine tải về (rất nặng: ffmpeg/ffprobe ~145MB mỗi file, vượt giới hạn 100MB của GitHub)
+# Chạy setup.ps1 để tải lại.
+bin/
+
+# Hồ sơ trình duyệt nhúng — CHỨA COOKIE ĐĂNG NHẬP, tuyệt đối không đưa lên git
+wvdata/
+
+# Log mỗi lần tải (chứa link video + token có chữ ký)
+logs/
+
+# Cấu hình riêng của máy (thư mục lưu, chất lượng đã chọn)
+settings.json
+
+# Editor
 .vscode/
-#Cache folder
-.alcache/
-#Symbols folder
-.alpackages/
-#Snapshots folder
-.snapshots/
-#Testing Output folder
-.output/
-#Extension App-file
-*.app
-#Rapid Application Development File
-rad.json
-#Translation Base-file
-*.g.xlf
-#License-files
-*.bclicense
-*.flf
-#Test results file
-TestResults.xml
