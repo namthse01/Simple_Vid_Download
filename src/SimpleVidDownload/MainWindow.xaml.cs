@@ -96,6 +96,7 @@ public partial class MainWindow : Window
         BtnPaste.Content = Loc.T("paste");
 
         LblQuality.Text = Loc.T("lblQuality");
+        CboQuality.ToolTip = Loc.T("qualityTip");
         var keep = CboQuality.SelectedIndex;
         for (int i = 0; i < CboQuality.Items.Count; i++)
             ((ComboBoxItem)CboQuality.Items[i]!).Content = Loc.T("q" + i);

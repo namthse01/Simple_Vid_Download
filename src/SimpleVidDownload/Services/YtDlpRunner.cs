@@ -184,21 +184,28 @@ public class YtDlpRunner
         a.Add("-o");
         a.Add(template);
 
+        // Chọn theo độ phân giải, và ƯU TIÊN CODEC cho dễ phát:
+        //  - Từ 1440p trở lên YouTube chỉ có VP9 hoặc AV1 (H.264 dừng ở 1080p).
+        //    Ưu tiên VP9 vì AV1 nhiều máy chưa có bộ giải mã, tải về sẽ không phát được.
+        //  - Từ 1080p trở xuống ưu tiên H.264 (avc1) vì máy nào cũng phát được.
+        // Ghép ra MP4 chỉ là đóng gói lại, KHÔNG mã hoá lại nên rất nhanh.
+        void Video(int maxHeight, string codec)
+        {
+            a.AddRange([
+                "-f", $"bestvideo[height<={maxHeight}]+bestaudio/best[height<={maxHeight}]/best",
+                "-S", $"res:{maxHeight},vcodec:{codec}",
+                "--merge-output-format", "mp4"
+            ]);
+        }
+
         switch (qualityIndex)
         {
-            case 0:
-                a.AddRange(["-f", "bestvideo+bestaudio/best", "--merge-output-format", "mp4"]);
-                break;
-            case 1:
-                a.AddRange(["-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best", "--merge-output-format", "mp4"]);
-                break;
-            case 2:
-                a.AddRange(["-f", "bestvideo[height<=720]+bestaudio/best[height<=720]/best", "--merge-output-format", "mp4"]);
-                break;
-            case 3:
-                a.AddRange(["-f", "bestvideo[height<=480]+bestaudio/best[height<=480]/best", "--merge-output-format", "mp4"]);
-                break;
-            case 4:
+            case 0: Video(2160, "vp9"); break;   // 4K nếu có, không có thì tự lùi xuống
+            case 1: Video(1440, "vp9"); break;
+            case 2: Video(1080, "avc1"); break;
+            case 3: Video(720, "avc1"); break;
+            case 4: Video(480, "avc1"); break;
+            case 5:
                 a.AddRange(["-x", "--audio-format", "mp3", "--audio-quality", "0"]);
                 break;
         }

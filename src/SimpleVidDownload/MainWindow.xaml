@@ -77,8 +77,9 @@
         <TextBlock x:Name="LblQuality" Grid.Row="1" Grid.Column="0" Text="Chất lượng"
                    Style="{StaticResource Lbl}" Margin="0,14,12,0"/>
         <WrapPanel Grid.Row="1" Grid.Column="1" Margin="0,14,0,0">
-          <ComboBox x:Name="CboQuality" Width="194" SelectedIndex="0" Margin="0,0,20,0">
-            <ComboBoxItem Content="Tốt nhất có thể (MP4)"/>
+          <ComboBox x:Name="CboQuality" Width="206" SelectedIndex="0" Margin="0,0,20,0">
+            <ComboBoxItem Content="Tốt nhất — 4K nếu có"/>
+            <ComboBoxItem Content="Tối đa 1440p (2K)"/>
             <ComboBoxItem Content="Tối đa 1080p"/>
             <ComboBoxItem Content="Tối đa 720p"/>
             <ComboBoxItem Content="Tối đa 480p"/>
