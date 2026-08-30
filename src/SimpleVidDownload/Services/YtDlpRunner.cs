@@ -167,10 +167,66 @@ public class YtDlpRunner
         catch { }
     }
 
+    /// <summary>
+    /// Hỏi nguồn xem có sẵn độ phân giải cao nhất là bao nhiêu (không tải gì cả).
+    /// Trả về 0 nếu không xác định được.
+    /// Dùng để khỏi phải nâng bằng AI khi nguồn vốn đã có sẵn bản nét hơn.
+    /// </summary>
+    public static async Task<int> ProbeMaxHeightAsync(
+        string url, bool useCookie, string browser, CapturedLink? captured,
+        CancellationToken ct = default)
+    {
+        var a = new List<string>
+        {
+            "--encoding", "utf-8", "--no-warnings", "--simulate", "--no-playlist",
+            "-f", "bestvideo/best", "--print", "%(height)s"
+        };
+        if (useCookie) { a.Add("--cookies-from-browser"); a.Add(browser); }
+        if (captured != null && captured.Url == url)
+        {
+            if (!string.IsNullOrEmpty(captured.Referer)) { a.Add("--referer"); a.Add(captured.Referer); }
+            if (!string.IsNullOrEmpty(captured.UserAgent)) { a.Add("--user-agent"); a.Add(captured.UserAgent); }
+            if (!string.IsNullOrEmpty(captured.Cookie)) { a.Add("--add-header"); a.Add("Cookie: " + captured.Cookie); }
+        }
+        a.Add(url);
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = AppPaths.YtDlp,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
+            WorkingDirectory = AppPaths.AppRoot
+        };
+        foreach (var x in a) psi.ArgumentList.Add(x);
+        psi.Environment["PATH"] = AppPaths.EngineDir + ";" + Environment.GetEnvironmentVariable("PATH");
+
+        try
+        {
+            using var p = Process.Start(psi);
+            if (p is null) return 0;
+            var outText = await p.StandardOutput.ReadToEndAsync(ct);
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(90));
+            await p.WaitForExitAsync(cts.Token);
+
+            foreach (var line in outText.Split('\n'))
+                if (int.TryParse(line.Trim(), out var h) && h > 0)
+                    return h;
+        }
+        catch { }
+        return 0;
+    }
+
     /// <summary>Dựng tham số tải theo lựa chọn trên giao diện.</summary>
+    /// <param name="overrideHeight">Nếu có, dùng chiều cao này thay cho mục chất lượng đã chọn.</param>
     public static List<string> BuildDownloadArgs(
         string url, string folder, int qualityIndex, bool playlist,
-        bool useCookie, string browser, CapturedLink? captured, string? titleForFile)
+        bool useCookie, string browser, CapturedLink? captured, string? titleForFile,
+        int? overrideHeight = null)
     {
         var a = new List<string>
         {
@@ -198,16 +254,24 @@ public class YtDlpRunner
             ]);
         }
 
-        switch (qualityIndex)
+        if (overrideHeight is int oh)
         {
-            case 0: Video(2160, "vp9"); break;   // 4K nếu có, không có thì tự lùi xuống
-            case 1: Video(1440, "vp9"); break;
-            case 2: Video(1080, "avc1"); break;
-            case 3: Video(720, "avc1"); break;
-            case 4: Video(480, "avc1"); break;
-            case 5:
-                a.AddRange(["-x", "--audio-format", "mp3", "--audio-quality", "0"]);
-                break;
+            // dùng khi bật nâng cấp AI: đích do người dùng chọn quyết định, không theo ô chất lượng
+            Video(oh, oh >= 1440 ? "vp9" : "avc1");
+        }
+        else
+        {
+            switch (qualityIndex)
+            {
+                case 0: Video(2160, "vp9"); break;   // 4K nếu có, không có thì tự lùi xuống
+                case 1: Video(1440, "vp9"); break;
+                case 2: Video(1080, "avc1"); break;
+                case 3: Video(720, "avc1"); break;
+                case 4: Video(480, "avc1"); break;
+                case 5:
+                    a.AddRange(["-x", "--audio-format", "mp3", "--audio-quality", "0"]);
+                    break;
+            }
         }
 
         if (!playlist) a.Add("--no-playlist");

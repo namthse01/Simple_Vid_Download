@@ -57,6 +57,13 @@ public static class Loc
         ["u1"]           = ["lên 1440p (2K)", "to 1440p (2K)"],
         ["u2"]           = ["lên 4K (2160p)", "to 4K (2160p)"],
 
+        ["probing"]      = ["Đang dò xem nguồn có sẵn chất lượng nào...",
+                            "Checking what the source already offers..."],
+        ["srcHasIt"]     = ["Nguồn đã có sẵn {0}p — tải thẳng bản gốc, khỏi cần AI.",
+                            "The source already has {0}p — downloading it directly, no AI needed."],
+        ["srcNeedsAi"]   = ["Nguồn cao nhất chỉ {0}p — sẽ nâng lên {1}p bằng AI sau khi tải.",
+                            "The source tops out at {0}p — it will be AI-upscaled to {1}p after downloading."],
+
         ["upBusy"]       = ["Đang nâng cấp bằng AI... {0}%  (còn ~{1})", "AI upscaling... {0}%  (~{1} left)"],
         ["upSplit"]      = ["Đang chuẩn bị...", "Preparing..."],
         ["upJoin"]       = ["Đang ghép lại...", "Joining the pieces..."],

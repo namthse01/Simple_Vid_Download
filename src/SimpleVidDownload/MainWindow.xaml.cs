@@ -27,6 +27,10 @@ public partial class MainWindow : Window
     /// <summary>Cho phép hủy khâu nâng cấp AI (khâu này có thể chạy rất lâu).</summary>
     private CancellationTokenSource? _upscaleCts;
 
+    /// <summary>Quyết định sau khi dò nguồn: có cần chạy AI sau khi tải xong không, và lên bao nhiêu.</summary>
+    private bool _pendingUpscale;
+    private int _pendingUpscaleTarget;
+
     private static readonly SolidColorBrush GoBrush = new((Color)ColorConverter.ConvertFromString("#A6E3A1"));
     private static readonly SolidColorBrush BadBrush = new((Color)ColorConverter.ConvertFromString("#F38BA8"));
 
@@ -114,11 +118,8 @@ public partial class MainWindow : Window
         : t.TotalMinutes >= 1 ? $"{(int)t.TotalMinutes} phút"
         : $"{Math.Max(1, (int)t.TotalSeconds)} giây";
 
-    private async Task RunUpscaleAsync(string path)
+    private async Task RunUpscaleAsync(string path, int target)
     {
-        int[] targets = [1080, 1440, 2160];
-        int target = targets[Math.Clamp(CboUpscale.SelectedIndex, 0, targets.Length - 1)];
-
         var info = await Upscaler.ProbeVideoAsync(path);
         if (info is not null && info.Height >= target)
         {
@@ -408,10 +409,43 @@ public partial class MainWindow : Window
         TxtFolder.Text = folder;
         SaveSettings();
 
+        // Bật nâng cấp AI thì dò nguồn TRƯỚC: nếu nguồn vốn đã có sẵn độ phân giải đích thì
+        // tải thẳng bản gốc — vừa nhanh vừa nét thật, hơn hẳn bản AI dựng lại.
+        _pendingUpscale = false;
+        _pendingUpscaleTarget = 0;
+        int? overrideHeight = null;
+
+        bool wantUpscale = ChkUpscale.IsEnabled && ChkUpscale.IsChecked == true
+                           && CboQuality.SelectedIndex != 5;   // chế độ MP3 thì không nâng gì cả
+        if (wantUpscale)
+        {
+            int[] targets = [1080, 1440, 2160];
+            int target = targets[Math.Clamp(CboUpscale.SelectedIndex, 0, targets.Length - 1)];
+
+            SetStatus(Loc.T("probing"));
+            BtnDownload.IsEnabled = false;
+            int maxH = await YtDlpRunner.ProbeMaxHeightAsync(
+                url, ChkCookie.IsChecked == true, SelectedBrowser, _captured);
+            BtnDownload.IsEnabled = true;
+
+            if (maxH >= target)
+            {
+                overrideHeight = target;                       // có sẵn -> lấy thẳng
+                SetStatus(string.Format(Loc.T("srcHasIt"), target));
+            }
+            else
+            {
+                // không đủ (hoặc không dò được) -> tải bản tốt nhất rồi nâng
+                _pendingUpscale = true;
+                _pendingUpscaleTarget = target;
+                if (maxH > 0) SetStatus(string.Format(Loc.T("srcNeedsAi"), maxH, target));
+            }
+        }
+
         var titleForFile = (_captured != null && _captured.Url == url) ? _capturedTitle : "";
         var args = YtDlpRunner.BuildDownloadArgs(
             url, folder, CboQuality.SelectedIndex, ChkPlaylist.IsChecked == true,
-            ChkCookie.IsChecked == true, SelectedBrowser, _captured, titleForFile);
+            ChkCookie.IsChecked == true, SelectedBrowser, _captured, titleForFile, overrideHeight);
 
         await RunAsync(args, Loc.T("fetching"));
     }
@@ -473,9 +507,12 @@ public partial class MainWindow : Window
                 _lastSavedPath = result.SavedPath;
                 BtnOpenVideo.IsEnabled = true;
 
-                // tải xong mới tới lượt AI, và chỉ khi người dùng chủ động bật
-                if (ChkUpscale.IsEnabled && ChkUpscale.IsChecked == true)
-                    await RunUpscaleAsync(result.SavedPath);
+                // chỉ chạy AI khi bước dò nguồn đã kết luận là cần
+                if (_pendingUpscale)
+                {
+                    _pendingUpscale = false;
+                    await RunUpscaleAsync(result.SavedPath, _pendingUpscaleTarget);
+                }
             }
         }
         else
