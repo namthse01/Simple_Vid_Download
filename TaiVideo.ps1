@@ -190,9 +190,10 @@ try {
 } catch { }
 
 # ---------- chạy yt-dlp ----------
-$script:proc   = $null
-$script:outLog = $null
-$script:errLog = $null
+$script:proc      = $null
+$script:outLog    = $null
+$script:errLog    = $null
+$script:cancelled = $false
 
 function Read-SharedFile([string]$path) {
     if (-not (Test-Path $path)) { return '' }
@@ -213,6 +214,7 @@ function Start-Ytdlp {
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $script:outLog = Join-Path $logDir "out_$stamp.log"
     $script:errLog = Join-Path $logDir "err_$stamp.log"
+    $script:cancelled = $false
     # bắt buộc: không có cờ này yt-dlp ghi log theo bảng mã ANSI -> tên tiếng Việt trong log hỏng hết
     $ArgList = @('--encoding', 'utf-8') + $ArgList
     $quoted = ($ArgList | ForEach-Object {
@@ -256,10 +258,14 @@ $timer.Add_Tick({
         }
         if ($script:proc -and $script:proc.HasExited) {
             $timer.Stop()
-            $code = $script:proc.ExitCode
             $pb.IsIndeterminate = $false
             $err = Read-SharedFile $script:errLog
-            if ($code -eq 0) {
+            # Start-Process -PassThru KHÔNG trả về ExitCode dùng được (luôn null, cả khi thành công),
+            # nên phải xét kết quả qua dòng "ERROR:" mà yt-dlp ghi ra stderr.
+            $failed = [bool]($err -match '(?m)^ERROR:')
+            if ($script:cancelled) {
+                $lblStatus.Text = 'Đã hủy tải.'
+            } elseif (-not $failed) {
                 $pb.Value = 100
                 # lấy tên file thật từ log để báo cho chắc chắn
                 $saved = ''
@@ -286,6 +292,7 @@ $timer.Add_Tick({
 function Invoke-DownloadClick {
     # đang tải → nút này là nút Hủy
     if ($script:proc -and -not $script:proc.HasExited) {
+        $script:cancelled = $true
         Start-Process -FilePath 'taskkill' -ArgumentList "/PID $($script:proc.Id) /T /F" -WindowStyle Hidden
         $lblStatus.Text = 'Đã hủy tải.'
         return
