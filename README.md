@@ -5,6 +5,8 @@ browser extension — including the part where it sniffs the video out of a page
 
 **[English](#english) · [Tiếng Việt](#tiếng-việt)**
 
+![Giao diện chính / Main window](docs/screenshot-main.png)
+
 ---
 
 ## English
@@ -54,6 +56,8 @@ Double-click **`TaiVideo.bat`**. If your clipboard already holds a URL, the app 
 ### Capture mode — for pages yt-dlp reports as `Unsupported URL`
 
 Use this for sites with no dedicated yt-dlp extractor, or that bury the video in an iframe.
+
+![Capture window](docs/screenshot-capture.png)
 
 1. Click **🌐 Bắt video từ trang web** to open the embedded browser (real Edge engine).
 2. Navigate to the video page. Autoplay is enabled, so the stream usually starts on its own —
@@ -184,6 +188,8 @@ Nháy đúp **`TaiVideo.bat`**. Nếu clipboard đang có sẵn link thì app t�
 ### Bắt video từ trang web — khi dán link báo `Unsupported URL`
 
 Dùng khi trang không nằm trong danh sách yt-dlp hỗ trợ, hoặc giấu video trong iframe.
+
+![Cửa sổ bắt video](docs/screenshot-capture.png)
 
 1. Bấm **🌐 Bắt video từ trang web** → mở trình duyệt nhúng (engine Edge thật).
 2. Vào trang video. App đã bật tự động phát nên video thường tự chạy — **nhiều khi không cần bấm
