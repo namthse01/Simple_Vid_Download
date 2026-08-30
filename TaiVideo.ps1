@@ -31,42 +31,229 @@ if (-not (Test-Path $ytdlp)) {
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Tải Video — dán link là xong" Height="620" Width="800" MinHeight="480" MinWidth="660"
-    WindowStartupLocation="CenterScreen" Background="#1E1E2E">
+    Title="Tải Video — dán link là xong" Height="660" Width="880" MinHeight="580" MinWidth="780"
+    WindowStartupLocation="CenterScreen" Background="#1E1E2E"
+    FontFamily="Segoe UI" TextOptions.TextFormattingMode="Display">
   <Window.Resources>
-    <Style TargetType="Button">
-      <Setter Property="Background" Value="#89B4FA"/>
-      <Setter Property="Foreground" Value="#11111B"/>
+    <!-- bang mau (Catppuccin Mocha) -->
+    <SolidColorBrush x:Key="Bg"      Color="#1E1E2E"/>
+    <SolidColorBrush x:Key="Card"    Color="#252537"/>
+    <SolidColorBrush x:Key="Sunken"  Color="#181825"/>
+    <SolidColorBrush x:Key="Field"   Color="#313244"/>
+    <SolidColorBrush x:Key="Line"    Color="#45475A"/>
+    <SolidColorBrush x:Key="Text"    Color="#CDD6F4"/>
+    <SolidColorBrush x:Key="Muted"   Color="#9399B2"/>
+    <SolidColorBrush x:Key="Accent"  Color="#89B4FA"/>
+    <SolidColorBrush x:Key="Go"      Color="#A6E3A1"/>
+    <SolidColorBrush x:Key="Warn"    Color="#F9E2AF"/>
+    <SolidColorBrush x:Key="Ink"     Color="#11111B"/>
+
+    <!-- nut bam bo goc -->
+    <Style x:Key="BtnBase" TargetType="Button">
+      <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+      <Setter Property="Background" Value="{StaticResource Accent}"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
-      <Setter Property="FontSize" Value="14"/>
-      <Setter Property="Padding" Value="14,7"/>
-      <Setter Property="Margin" Value="6,0,0,0"/>
-      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Padding" Value="16,9"/>
       <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="SnapsToDevicePixels" Value="True"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" CornerRadius="7" Background="{TemplateBinding Background}"
+                    Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Opacity" Value="0.86"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bd" Property="Opacity" Value="0.68"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
     </Style>
+    <!-- nut phu: nen xam, chu sang -->
+    <Style x:Key="BtnGhost" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+      <Setter Property="Background" Value="{StaticResource Line}"/>
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="FontWeight" Value="Normal"/>
+    </Style>
+
+    <!-- o nhap bo goc -->
     <Style TargetType="TextBox">
-      <Setter Property="Background" Value="#313244"/>
-      <Setter Property="Foreground" Value="#CDD6F4"/>
-      <Setter Property="CaretBrush" Value="#CDD6F4"/>
-      <Setter Property="BorderBrush" Value="#45475A"/>
-      <Setter Property="Padding" Value="8,6"/>
-      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="Background" Value="{StaticResource Field}"/>
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="CaretBrush" Value="{StaticResource Text}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="10,8"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TextBox">
+            <Border x:Name="bd" CornerRadius="7" Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    Padding="{TemplateBinding Padding}">
+              <ScrollViewer x:Name="PART_ContentHost"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
     </Style>
+
     <Style TargetType="TextBlock">
-      <Setter Property="Foreground" Value="#CDD6F4"/>
-      <Setter Property="FontSize" Value="14"/>
-      <Setter Property="VerticalAlignment" Value="Center"/>
-    </Style>
-    <Style TargetType="CheckBox">
-      <Setter Property="Foreground" Value="#CDD6F4"/>
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
       <Setter Property="FontSize" Value="13"/>
       <Setter Property="VerticalAlignment" Value="Center"/>
-      <Setter Property="Margin" Value="16,0,0,0"/>
+    </Style>
+    <!-- nhan ben trai, thang cot -->
+    <Style x:Key="Lbl" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="HorizontalAlignment" Value="Right"/>
+      <Setter Property="Margin" Value="0,0,12,0"/>
+    </Style>
+
+    <!-- o tick tu ve cho hop tone toi -->
+    <Style TargetType="CheckBox">
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="CheckBox">
+            <StackPanel Orientation="Horizontal" Background="Transparent">
+              <Border x:Name="box" Width="17" Height="17" CornerRadius="5"
+                      Background="{StaticResource Field}" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                <Path x:Name="tick" Data="M 3.5,8.5 L 6.5,11.5 L 13,4.5" Stroke="#11111B"
+                      StrokeThickness="2" StrokeEndLineCap="Round" StrokeStartLineCap="Round"
+                      Visibility="Collapsed"/>
+              </Border>
+              <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="box"  Property="Background" Value="{StaticResource Accent}"/>
+                <Setter TargetName="box"  Property="BorderBrush" Value="{StaticResource Accent}"/>
+                <Setter TargetName="tick" Property="Visibility" Value="Visible"/>
+              </Trigger>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource Accent}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- ComboBox: phai tu ve template, WPF mac dinh khong nhan mau nen -->
+    <Style x:Key="CbToggle" TargetType="ToggleButton">
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ToggleButton">
+            <Border x:Name="bd" CornerRadius="7" Background="{StaticResource Field}"
+                    BorderBrush="{StaticResource Line}" BorderThickness="1" SnapsToDevicePixels="True">
+              <Path x:Name="arw" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,11,0"
+                    Data="M 0,0 L 4.5,5 L 9,0" Stroke="{StaticResource Muted}" StrokeThickness="1.7"
+                    StrokeEndLineCap="Round" StrokeStartLineCap="Round"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd"  Property="BorderBrush" Value="{StaticResource Accent}"/>
+                <Setter TargetName="arw" Property="Stroke" Value="{StaticResource Text}"/>
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style TargetType="ComboBoxItem">
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Padding" Value="11,7"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBoxItem">
+            <Border x:Name="ib" Background="Transparent" CornerRadius="5"
+                    Padding="{TemplateBinding Padding}" Margin="3,1">
+              <ContentPresenter/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="ib" Property="Background" Value="{StaticResource Line}"/>
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="ib" Property="Background" Value="{StaticResource Accent}"/>
+                <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style TargetType="ComboBox">
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Height" Value="34"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBox">
+            <Grid>
+              <ToggleButton Style="{StaticResource CbToggle}" Focusable="False" ClickMode="Press"
+                            IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
+              <ContentPresenter IsHitTestVisible="False" Margin="11,0,28,0"
+                                VerticalAlignment="Center" HorizontalAlignment="Left"
+                                Content="{TemplateBinding SelectionBoxItem}"
+                                ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                TextElement.Foreground="{StaticResource Text}"/>
+              <Popup x:Name="PART_Popup" Placement="Bottom" AllowsTransparency="True" Focusable="False"
+                     IsOpen="{TemplateBinding IsDropDownOpen}" PopupAnimation="Fade" VerticalOffset="4">
+                <Border Background="{StaticResource Field}" BorderBrush="{StaticResource Line}"
+                        BorderThickness="1" CornerRadius="8" Padding="2"
+                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                        MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                  <ScrollViewer>
+                    <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                  </ScrollViewer>
+                </Border>
+              </Popup>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style TargetType="ProgressBar">
+      <Setter Property="Background" Value="{StaticResource Field}"/>
+      <Setter Property="Foreground" Value="{StaticResource Go}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Height" Value="8"/>
     </Style>
   </Window.Resources>
-  <Grid Margin="18">
+  <Grid Margin="20,16,20,18">
     <Grid.RowDefinitions>
-      <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
@@ -74,66 +261,154 @@ if (-not (Test-Path $ytdlp)) {
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
 
-    <Grid Grid.Row="0" Margin="0,0,0,10">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto"/>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="Auto"/>
-      </Grid.ColumnDefinitions>
-      <TextBlock Grid.Column="0" Text="Link video:" Margin="0,0,10,0" FontWeight="Bold"/>
-      <TextBox x:Name="txtUrl" Grid.Column="1"/>
-      <Button x:Name="btnPaste" Grid.Column="2" Content="Dán link"/>
+    <!-- ===== dau trang ===== -->
+    <Grid Grid.Row="0" Margin="0,0,0,14">
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <TextBlock Text="Tải Video" FontSize="20" FontWeight="Bold"/>
+        <TextBlock Text="dán link là xong" Foreground="{StaticResource Muted}"
+                   FontSize="12.5" Margin="12,3,0,0"/>
+      </StackPanel>
+      <Button x:Name="btnUpdate" Content="Cập nhật engine" Style="{StaticResource BtnGhost}"
+              HorizontalAlignment="Right" Padding="13,7" FontSize="12"
+              ToolTip="Cập nhật yt-dlp lên bản mới nhất — bấm khi YouTube đột nhiên tải lỗi"/>
     </Grid>
 
-    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-      <TextBlock Text="Chất lượng:" Margin="0,0,8,0"/>
-      <ComboBox x:Name="cboQuality" Width="200" FontSize="13" SelectedIndex="0" VerticalAlignment="Center">
-        <ComboBoxItem Content="Tốt nhất có thể (MP4)"/>
-        <ComboBoxItem Content="Tối đa 1080p"/>
-        <ComboBoxItem Content="Tối đa 720p"/>
-        <ComboBoxItem Content="Tối đa 480p"/>
-        <ComboBoxItem Content="Chỉ lấy âm thanh (MP3)"/>
-      </ComboBox>
-      <CheckBox x:Name="chkPlaylist" Content="Tải cả playlist"/>
-      <CheckBox x:Name="chkCookie" Content="Dùng cookie:"/>
-      <ComboBox x:Name="cboBrowser" Width="80" FontSize="13" SelectedIndex="0" Margin="6,0,0,0" VerticalAlignment="Center">
-        <ComboBoxItem Content="edge"/>
-        <ComboBoxItem Content="chrome"/>
-        <ComboBoxItem Content="firefox"/>
-      </ComboBox>
-      <Button x:Name="btnCapture" Content="🌐 Bắt video từ trang web" Background="#F9E2AF" Margin="16,0,0,0"/>
-    </StackPanel>
+    <!-- ===== the nhap lieu ===== -->
+    <Border Grid.Row="1" Background="{StaticResource Card}" CornerRadius="10"
+            Padding="16,14" Margin="0,0,0,14">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" MinWidth="76"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-    <Grid Grid.Row="2" Margin="0,0,0,12">
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Link video" Style="{StaticResource Lbl}"/>
+        <Grid Grid.Row="0" Grid.Column="1">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <TextBox x:Name="txtUrl" Grid.Column="0"/>
+          <TextBlock Grid.Column="0" IsHitTestVisible="False" Margin="12,0,0,0" FontSize="13"
+                     VerticalAlignment="Center" Foreground="#6C7086"
+                     Text="Dán link video vào đây rồi bấm Enter...">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock">
+                <Setter Property="Visibility" Value="Collapsed"/>
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding Text, ElementName=txtUrl}" Value="">
+                    <Setter Property="Visibility" Value="Visible"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+          <Button x:Name="btnPaste" Grid.Column="1" Content="Dán link"
+                  Style="{StaticResource BtnBase}" Margin="8,0,0,0"/>
+        </Grid>
+
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Chất lượng"
+                   Style="{StaticResource Lbl}" Margin="0,14,12,0"/>
+        <WrapPanel Grid.Row="1" Grid.Column="1" Margin="0,14,0,0">
+          <ComboBox x:Name="cboQuality" Width="194" SelectedIndex="0" Margin="0,0,20,0">
+            <ComboBoxItem Content="Tốt nhất có thể (MP4)"/>
+            <ComboBoxItem Content="Tối đa 1080p"/>
+            <ComboBoxItem Content="Tối đa 720p"/>
+            <ComboBoxItem Content="Tối đa 480p"/>
+            <ComboBoxItem Content="Chỉ lấy âm thanh (MP3)"/>
+          </ComboBox>
+          <CheckBox x:Name="chkPlaylist" Content="Tải cả playlist" Margin="0,0,20,0"
+                    ToolTip="Dán link playlist và tải toàn bộ"/>
+          <StackPanel Orientation="Horizontal">
+            <CheckBox x:Name="chkCookie" Content="Dùng cookie"
+                      ToolTip="Cho video riêng tư hoặc giới hạn tuổi — nên chọn edge hoặc firefox"/>
+            <ComboBox x:Name="cboBrowser" Width="88" SelectedIndex="0" Margin="8,0,0,0">
+              <ComboBoxItem Content="edge"/>
+              <ComboBoxItem Content="chrome"/>
+              <ComboBoxItem Content="firefox"/>
+            </ComboBox>
+          </StackPanel>
+        </WrapPanel>
+
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Lưu vào"
+                   Style="{StaticResource Lbl}" Margin="0,14,12,0"/>
+        <Grid Grid.Row="2" Grid.Column="1" Margin="0,14,0,0">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <TextBox x:Name="txtFolder" Grid.Column="0"/>
+          <Button x:Name="btnFolder" Grid.Column="1" Content="Chọn..."
+                  Style="{StaticResource BtnGhost}" Margin="8,0,0,0"/>
+          <Button x:Name="btnOpen" Grid.Column="2" Content="Mở thư mục"
+                  Style="{StaticResource BtnGhost}" Margin="8,0,0,0"/>
+        </Grid>
+      </Grid>
+    </Border>
+
+    <!-- ===== hai nut hanh dong ===== -->
+    <Grid Grid.Row="2" Margin="0,0,0,14">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto"/>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="Auto"/>
-        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="1.9*"/>
+        <ColumnDefinition Width="1.5*"/>
       </Grid.ColumnDefinitions>
-      <TextBlock Grid.Column="0" Text="Lưu vào:" Margin="0,0,10,0" FontWeight="Bold"/>
-      <TextBox x:Name="txtFolder" Grid.Column="1"/>
-      <Button x:Name="btnFolder" Grid.Column="2" Content="Chọn..."/>
-      <Button x:Name="btnOpen" Grid.Column="3" Content="Mở thư mục" Background="#45475A" Foreground="#CDD6F4"/>
+      <Button x:Name="btnDownload" Grid.Column="0" Content="⬇   TẢI XUỐNG"
+              Style="{StaticResource BtnBase}" Background="{StaticResource Go}"
+              FontSize="15" Padding="0,13"/>
+      <Button x:Name="btnCapture" Grid.Column="1" Content="🌐   Bắt video từ trang web"
+              Style="{StaticResource BtnBase}" Background="{StaticResource Warn}"
+              FontSize="13" Padding="0,13" Margin="10,0,0,0"
+              ToolTip="Mở trình duyệt nhúng để bắt link video — dùng khi dán link báo Unsupported URL"/>
     </Grid>
 
-    <Grid Grid.Row="3" Margin="0,0,0,12">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="Auto"/>
-      </Grid.ColumnDefinitions>
-      <Button x:Name="btnDownload" Grid.Column="0" Content="⬇  TẢI XUỐNG" FontSize="17" Padding="0,10" Margin="0" Background="#A6E3A1"/>
-      <Button x:Name="btnUpdate" Grid.Column="1" Content="Cập nhật engine" Background="#45475A" Foreground="#CDD6F4"/>
+    <!-- ===== tien do + trang thai ===== -->
+    <Border Grid.Row="3" Background="{StaticResource Card}" CornerRadius="10"
+            Padding="16,13" Margin="0,0,0,14">
+      <StackPanel>
+        <ProgressBar x:Name="pb" Minimum="0" Maximum="100"/>
+        <TextBlock x:Name="lblStatus" Margin="0,10,0,0" TextTrimming="CharacterEllipsis"
+                   Foreground="{StaticResource Muted}"
+                   Text="Sẵn sàng — dán link rồi bấm TẢI XUỐNG (hoặc Enter)."/>
+      </StackPanel>
+    </Border>
+
+    <!-- ===== nhat ky ===== -->
+    <Grid Grid.Row="4">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <TextBlock Grid.Row="0" Text="NHẬT KÝ" FontSize="11" Margin="2,0,0,7"
+                 Foreground="{StaticResource Muted}"/>
+      <Border Grid.Row="1" Background="{StaticResource Sunken}" CornerRadius="10" Padding="6">
+        <Grid>
+          <TextBox x:Name="txtLog" IsReadOnly="True" TextWrapping="Wrap"
+                   Background="Transparent" BorderThickness="0" Padding="8,6"
+                   VerticalContentAlignment="Stretch" VerticalScrollBarVisibility="Auto"
+                   FontFamily="Consolas" FontSize="11.5" Foreground="{StaticResource Muted}"/>
+          <TextBlock IsHitTestVisible="False" Margin="10,8,0,0" FontSize="12"
+                     VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#585B70"
+                     Text="Tiến trình tải sẽ hiện ở đây.">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock">
+                <Setter Property="Visibility" Value="Collapsed"/>
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding Text, ElementName=txtLog}" Value="">
+                    <Setter Property="Visibility" Value="Visible"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+        </Grid>
+      </Border>
     </Grid>
-
-    <StackPanel Grid.Row="4" Margin="0,0,0,10">
-      <ProgressBar x:Name="pb" Height="18" Minimum="0" Maximum="100" Background="#313244" Foreground="#A6E3A1" BorderThickness="0"/>
-      <TextBlock x:Name="lblStatus" Text="Sẵn sàng — dán link rồi bấm TẢI XUỐNG (hoặc Enter)." Margin="0,6,0,0" FontSize="13" Foreground="#A6ADC8"/>
-    </StackPanel>
-
-    <TextBox x:Name="txtLog" Grid.Row="5" IsReadOnly="True" TextWrapping="Wrap"
-             VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"
-             Background="#181825" Foreground="#A6ADC8" BorderBrush="#313244"/>
   </Grid>
 </Window>
 '@
@@ -411,17 +686,26 @@ function Resolve-EmbedUrl {
     [xml]$rx = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Đang lấy link video thật..." Height="620" Width="900"
-        WindowStartupLocation="CenterScreen" Background="#1E1E2E">
-  <Grid Margin="10">
+        Title="Đang lấy link video thật..." Height="640" Width="920"
+        WindowStartupLocation="CenterScreen" Background="#1E1E2E"
+        FontFamily="Segoe UI" TextOptions.TextFormattingMode="Display">
+  <Grid Margin="16,14,16,16">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
-    <TextBlock x:Name="rStatus" Grid.Row="0" Foreground="#F9E2AF" FontSize="13" Margin="0,0,0,8"
-               TextWrapping="Wrap"
-               Text="Đang mở player để lấy link video thật. Chờ vài giây, cửa sổ này tự đóng..."/>
-    <Border x:Name="rHost" Grid.Row="1" BorderBrush="#45475A" BorderThickness="1" Background="#000000"/>
+    <Border Grid.Row="0" Background="#252537" CornerRadius="10" Padding="14,12" Margin="0,0,0,12">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Text="⏳" FontSize="17" VerticalAlignment="Center" Margin="0,0,12,0"/>
+        <TextBlock x:Name="rStatus" Foreground="#F9E2AF" FontSize="13" TextWrapping="Wrap"
+                   VerticalAlignment="Center"
+                   Text="Đang mở player để lấy link video thật. Chờ vài giây, cửa sổ này tự đóng..."/>
+      </StackPanel>
+    </Border>
+    <Border Grid.Row="1" Background="#000000" CornerRadius="10"
+            BorderBrush="#45475A" BorderThickness="1">
+      <Border x:Name="rHost" CornerRadius="9" ClipToBounds="True" Background="#000000"/>
+    </Border>
   </Grid>
 </Window>
 '@
@@ -578,48 +862,164 @@ function Open-CaptureWindow {
     [xml]$cx = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Bắt video từ trang web — play video rồi chọn link" Height="760" Width="1040"
-        WindowStartupLocation="CenterScreen" Background="#1E1E2E">
-  <Grid Margin="8">
+        Title="Bắt video từ trang web" Height="780" Width="1060" MinHeight="560" MinWidth="820"
+        WindowStartupLocation="CenterScreen" Background="#1E1E2E"
+        FontFamily="Segoe UI" TextOptions.TextFormattingMode="Display">
+  <Window.Resources>
+    <SolidColorBrush x:Key="Card"   Color="#252537"/>
+    <SolidColorBrush x:Key="Sunken" Color="#181825"/>
+    <SolidColorBrush x:Key="Field"  Color="#313244"/>
+    <SolidColorBrush x:Key="Line"   Color="#45475A"/>
+    <SolidColorBrush x:Key="Text"   Color="#CDD6F4"/>
+    <SolidColorBrush x:Key="Muted"  Color="#9399B2"/>
+    <SolidColorBrush x:Key="Accent" Color="#89B4FA"/>
+    <SolidColorBrush x:Key="Go"     Color="#A6E3A1"/>
+    <SolidColorBrush x:Key="Ink"    Color="#11111B"/>
+
+    <Style x:Key="BtnBase" TargetType="Button">
+      <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+      <Setter Property="Background" Value="{StaticResource Accent}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Padding" Value="15,9"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" CornerRadius="7" Background="{TemplateBinding Background}"
+                    Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Opacity" Value="0.86"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bd" Property="Opacity" Value="0.68"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="BtnGhost" TargetType="Button" BasedOn="{StaticResource BtnBase}">
+      <Setter Property="Background" Value="{StaticResource Line}"/>
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="FontWeight" Value="Normal"/>
+    </Style>
+
+    <Style TargetType="TextBox">
+      <Setter Property="Background" Value="{StaticResource Field}"/>
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="CaretBrush" Value="{StaticResource Text}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="11,8"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TextBox">
+            <Border x:Name="bd" CornerRadius="7" Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    Padding="{TemplateBinding Padding}">
+              <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style TargetType="ListBoxItem">
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="Padding" Value="9,6"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ListBoxItem">
+            <Border x:Name="ib" Background="Transparent" CornerRadius="5"
+                    Padding="{TemplateBinding Padding}" Margin="3,1">
+              <ContentPresenter/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="ib" Property="Background" Value="#2A2A3E"/>
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="ib" Property="Background" Value="{StaticResource Accent}"/>
+                <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+
+  <Grid Margin="16,14,16,16">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
-    <Grid Grid.Row="0" Margin="0,0,0,6">
+
+    <!-- thanh dia chi -->
+    <Grid Grid.Row="0" Margin="0,0,0,12">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="*"/>
         <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
-      <Button x:Name="cBack" Grid.Column="0" Content="◀" Width="38" Background="#45475A" Foreground="#CDD6F4" FontWeight="Bold"/>
-      <TextBox x:Name="cAddr" Grid.Column="1" Margin="6,0,6,0" FontSize="13" Padding="8,6"
-               Background="#313244" Foreground="#CDD6F4" BorderBrush="#45475A"/>
-      <Button x:Name="cGo" Grid.Column="2" Content="Đi" Width="52" Background="#89B4FA" Foreground="#11111B" FontWeight="Bold"/>
+      <Button x:Name="cBack" Grid.Column="0" Content="◀" Width="42"
+              Style="{StaticResource BtnGhost}" FontWeight="Bold" ToolTip="Quay lại trang trước"/>
+      <TextBox x:Name="cAddr" Grid.Column="1" Margin="8,0,8,0"/>
+      <Button x:Name="cGo" Grid.Column="2" Content="Đi" Width="56"
+              Style="{StaticResource BtnBase}"/>
     </Grid>
-    <Border x:Name="cHost" Grid.Row="1" BorderBrush="#45475A" BorderThickness="1" Background="#000000"/>
-    <Grid Grid.Row="2" Margin="0,8,0,4">
+
+    <!-- khung trinh duyet -->
+    <Border Grid.Row="1" Background="#000000" CornerRadius="10"
+            BorderBrush="{StaticResource Line}" BorderThickness="1">
+      <Border x:Name="cHost" CornerRadius="9" ClipToBounds="True" Background="#000000"/>
+    </Border>
+
+    <!-- huong dan + so link -->
+    <Grid Grid.Row="2" Margin="2,12,2,10">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*"/>
         <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
-      <TextBlock x:Name="cInfo" Grid.Column="0" Foreground="#F9E2AF" FontSize="13" VerticalAlignment="Center"
-                 Text="Bấm ▶ play video trong trang, chờ 2-3 giây → link video sẽ hiện ở danh sách dưới → chọn rồi bấm nút xanh."/>
-      <TextBlock x:Name="cCount" Grid.Column="1" Foreground="#A6ADC8" FontSize="13" VerticalAlignment="Center"/>
+      <TextBlock x:Name="cInfo" Grid.Column="0" Foreground="#F9E2AF" FontSize="12.5"
+                 VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,16,0"
+                 Text="Mở trang video và chờ vài giây — link sẽ tự hiện bên dưới. Nếu chưa thấy thì bấm ▶ play một cái."/>
+      <TextBlock x:Name="cCount" Grid.Column="1" Foreground="{StaticResource Muted}"
+                 FontSize="12.5" VerticalAlignment="Center"/>
     </Grid>
+
+    <!-- danh sach link + nut -->
     <Grid Grid.Row="3">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*"/>
         <ColumnDefinition Width="Auto"/>
-        <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
-      <ListBox x:Name="cList" Grid.Column="0" Height="96" FontFamily="Consolas" FontSize="12"
-               Background="#181825" Foreground="#A6E3A1" BorderBrush="#313244"/>
-      <Button x:Name="cCopy" Grid.Column="1" Content="Copy" Width="72" VerticalAlignment="Top" Margin="6,0,0,0"
-              Background="#45475A" Foreground="#CDD6F4"/>
-      <Button x:Name="cUse" Grid.Column="2" Content="⬇ Dùng link này để TẢI" VerticalAlignment="Top" Margin="6,0,0,0"
-              Padding="12,8" Background="#A6E3A1" Foreground="#11111B" FontWeight="Bold"/>
+      <Border Grid.Column="0" Background="{StaticResource Sunken}" CornerRadius="10" Padding="3">
+        <ListBox x:Name="cList" Height="104" FontFamily="Consolas" FontSize="11.5"
+                 Background="Transparent" BorderThickness="0" Foreground="{StaticResource Text}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+      </Border>
+      <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="10,0,0,0">
+        <Button x:Name="cUse" Content="⬇  Dùng link này để TẢI"
+                Style="{StaticResource BtnBase}" Background="{StaticResource Go}" Padding="16,11"/>
+        <Button x:Name="cCopy" Content="Copy link" Style="{StaticResource BtnGhost}"
+                Margin="0,8,0,0" Padding="16,8"/>
+      </StackPanel>
     </Grid>
   </Grid>
 </Window>
