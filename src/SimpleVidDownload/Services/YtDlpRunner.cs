@@ -11,8 +11,10 @@ public class YtDlpResult
     public bool Success { get; init; }
     public int ExitCode { get; init; }
     public string StdErr { get; init; } = "";
-    /// <summary>Tên file cuối cùng lấy được từ log (nếu có).</summary>
+    /// <summary>Tên file cuối cùng lấy được từ log (chỉ tên, để hiện cho người dùng).</summary>
     public string SavedFile { get; init; } = "";
+    /// <summary>Đường dẫn đầy đủ tới file đã lưu — dùng cho nút "Mở video".</summary>
+    public string SavedPath { get; init; } = "";
 }
 
 /// <summary>
@@ -42,6 +44,8 @@ public class YtDlpRunner
     private static readonly Regex RxDestination = new(@"^\[[^\]]+\] Destination:\s*(.+?)\s*$",
         RegexOptions.Compiled | RegexOptions.Multiline);
     private static readonly Regex RxMerging = new(@"^\[Merger\] Merging formats into\s+""(.+?)""\s*$",
+        RegexOptions.Compiled | RegexOptions.Multiline);
+    private static readonly Regex RxAlready = new(@"^\[download\]\s+(.+?)\s+has already been downloaded",
         RegexOptions.Compiled | RegexOptions.Multiline);
 
     public async Task<YtDlpResult> RunAsync(IEnumerable<string> args)
@@ -95,13 +99,15 @@ public class YtDlpRunner
 
         WriteLog(outText, errText);
 
+        var savedPath = ExtractSavedPath(outText);
         return new YtDlpResult
         {
             Cancelled = _cancelled,
             Success = !_cancelled && exitCode == 0,
             ExitCode = exitCode,
             StdErr = errText,
-            SavedFile = ExtractSavedFile(outText)
+            SavedPath = savedPath,
+            SavedFile = savedPath.Length > 0 ? Path.GetFileName(savedPath) : ""
         };
     }
 
@@ -137,13 +143,16 @@ public class YtDlpRunner
             StageChanged?.Invoke(trimmed.Length > 110 ? trimmed[..110] + "..." : trimmed);
     }
 
-    private static string ExtractSavedFile(string log)
+    /// <summary>Dò đường dẫn file cuối cùng trong log. Thứ tự ưu tiên có chủ đích.</summary>
+    private static string ExtractSavedPath(string log)
     {
         string saved = "";
         foreach (Match m in RxDestination.Matches(log)) saved = m.Groups[1].Value;
-        // dòng Merger ghi đè: nó mới là file cuối, Destination cuối chỉ là file tạm
+        // file đã có sẵn từ trước -> yt-dlp không ghi dòng Destination nào
+        foreach (Match m in RxAlready.Matches(log)) saved = m.Groups[1].Value;
+        // dòng Merger ghi đè: nó mới là file cuối, Destination cuối chỉ là file tạm (.f251.webm)
         foreach (Match m in RxMerging.Matches(log)) saved = m.Groups[1].Value;
-        return saved.Length > 0 ? Path.GetFileName(saved) : "";
+        return saved;
     }
 
     private static void WriteLog(string outText, string errText)

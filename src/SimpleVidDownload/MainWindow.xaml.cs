@@ -21,6 +21,9 @@ public partial class MainWindow : Window
     /// <summary>Tiêu đề trang lúc bắt link — dùng làm tên file, vì link stream không mang tên.</summary>
     private string _capturedTitle = "";
 
+    /// <summary>File vừa tải xong — cho nút "Mở video". Rỗng nghĩa là chưa có gì để mở.</summary>
+    private string _lastSavedPath = "";
+
     private static readonly SolidColorBrush GoBrush = new((Color)ColorConverter.ConvertFromString("#A6E3A1"));
     private static readonly SolidColorBrush BadBrush = new((Color)ColorConverter.ConvertFromString("#F38BA8"));
 
@@ -111,6 +114,9 @@ public partial class MainWindow : Window
         BtnCapture.Content = Loc.T("capture");
         BtnCapture.ToolTip = Loc.T("captureTip");
 
+        BtnOpenVideo.Content = Loc.T("openVideo");
+        BtnOpenVideo.ToolTip = Loc.T("openVideoTip");
+
         LblLogHeader.Text = Loc.T("logHeader");
         LblLogHint.Text = Loc.T("logHint");
 
@@ -194,6 +200,22 @@ public partial class MainWindow : Window
         var f = TxtFolder.Text.Trim();
         if (Directory.Exists(f))
             Process.Start(new ProcessStartInfo("explorer.exe", f) { UseShellExecute = true });
+    }
+
+    private void BtnOpenVideo_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_lastSavedPath)) return;
+
+        if (!File.Exists(_lastSavedPath))
+        {
+            BtnOpenVideo.IsEnabled = false;
+            MessageBox.Show(string.Format(Loc.T("msgFileGone"), _lastSavedPath),
+                Loc.T("appName"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // UseShellExecute = mở bằng trình phát mặc định của máy
+        Process.Start(new ProcessStartInfo(_lastSavedPath) { UseShellExecute = true });
     }
 
     private void BtnCapture_Click(object sender, RoutedEventArgs e)
@@ -288,6 +310,10 @@ public partial class MainWindow : Window
         SetStatus(startStatus);
         SetBusy(true);
 
+        // lần tải mới -> file cũ không còn liên quan nữa
+        _lastSavedPath = "";
+        BtnOpenVideo.IsEnabled = false;
+
         _runner = new YtDlpRunner();
         _runner.LineReceived += line => Dispatcher.Invoke(() => AppendLog(line));
         _runner.ProgressChanged += pct => Dispatcher.Invoke(() =>
@@ -323,6 +349,13 @@ public partial class MainWindow : Window
             SetStatus(string.IsNullOrEmpty(result.SavedFile)
                 ? Loc.T("done")
                 : Loc.T("doneNamed") + result.SavedFile);
+
+            // chỉ bật nút khi thật sự có file trên đĩa (lệnh -U chẳng hạn thì không có)
+            if (!string.IsNullOrEmpty(result.SavedPath) && File.Exists(result.SavedPath))
+            {
+                _lastSavedPath = result.SavedPath;
+                BtnOpenVideo.IsEnabled = true;
+            }
         }
         else
         {

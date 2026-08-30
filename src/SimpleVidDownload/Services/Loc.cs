@@ -50,6 +50,12 @@ public static class Loc
         ["captureTip"]   = ["Mở trình duyệt nhúng để bắt link video — dùng khi dán link báo Unsupported URL",
                             "Opens an embedded browser to sniff the video link — use it when a link gives Unsupported URL"],
 
+        ["openVideo"]    = ["▶  Mở video", "▶  Open video"],
+        ["openVideoTip"] = ["Mở file vừa tải bằng trình phát mặc định",
+                            "Open the file you just downloaded in your default player"],
+        ["msgFileGone"]  = ["Không tìm thấy file nữa — có thể đã bị di chuyển hoặc xoá:\n{0}",
+                            "The file is no longer there — it may have been moved or deleted:\n{0}"],
+
         ["logHeader"]    = ["NHẬT KÝ", "LOG"],
         ["logHint"]      = ["Tiến trình tải sẽ hiện ở đây.", "Download progress shows up here."],
 
