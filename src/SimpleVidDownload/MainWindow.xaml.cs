@@ -27,6 +27,9 @@ public partial class MainWindow : Window
     /// <summary>Cho phép hủy khâu nâng cấp AI (khâu này có thể chạy rất lâu).</summary>
     private CancellationTokenSource? _upscaleCts;
 
+    /// <summary>Link vừa tải hỏng — để nút cứu cánh mở thẳng trang đó.</summary>
+    private string _rescueUrl = "";
+
     /// <summary>Quyết định sau khi dò nguồn: có cần chạy AI sau khi tải xong không, và lên bao nhiêu.</summary>
     private bool _pendingUpscale;
     private int _pendingUpscaleTarget;
@@ -224,6 +227,7 @@ public partial class MainWindow : Window
         BtnCapture.Content = Loc.T("capture");
         BtnCapture.ToolTip = Loc.T("captureTip");
 
+        BtnRescue.Content = Loc.T("rescueBtn");
         BtnOpenVideo.Content = Loc.T("openVideo");
         BtnOpenVideo.ToolTip = Loc.T("openVideoTip");
 
@@ -328,9 +332,18 @@ public partial class MainWindow : Window
         Process.Start(new ProcessStartInfo(_lastSavedPath) { UseShellExecute = true });
     }
 
-    private void BtnCapture_Click(object sender, RoutedEventArgs e)
+    private void BtnCapture_Click(object sender, RoutedEventArgs e) => OpenCapture(TxtUrl.Text.Trim());
+
+    /// <summary>Nút trên bảng cứu cánh: mở thẳng trang vừa tải hỏng.</summary>
+    private void BtnRescue_Click(object sender, RoutedEventArgs e)
     {
-        var win = new CaptureWindow(TxtUrl.Text.Trim()) { Owner = this };
+        HideRescue();
+        OpenCapture(string.IsNullOrEmpty(_rescueUrl) ? TxtUrl.Text.Trim() : _rescueUrl);
+    }
+
+    private void OpenCapture(string seedUrl)
+    {
+        var win = new CaptureWindow(seedUrl) { Owner = this };
         win.ShowDialog();
 
         if (win.Chosen != null)
@@ -341,6 +354,31 @@ public partial class MainWindow : Window
             SetStatus(Loc.T("gotLink"));
         }
     }
+
+    // ================= bảng cứu cánh khi tải lỗi =================
+
+    private void HideRescue() => PanelRescue.Visibility = Visibility.Collapsed;
+
+    /// <summary>
+    /// Hiện bảng vàng kèm nút to. Lỗi kiểu "trang không hỗ trợ" thì nói thẳng là chế độ bắt video
+    /// sẽ giải quyết được; lỗi khác thì gợi ý thử cách đó.
+    /// </summary>
+    private void ShowRescue(string url, string stdErr)
+    {
+        _rescueUrl = url;
+        bool notSupported = LooksUnsupported(stdErr);
+        LblRescueTitle.Text = Loc.T(notSupported ? "rescueTitle" : "rescueTitle2");
+        LblRescueBody.Text = Loc.T(notSupported ? "rescueBody" : "rescueBody2");
+        PanelRescue.Visibility = Visibility.Visible;
+    }
+
+    /// <summary>Lỗi do yt-dlp không đọc được trang, chứ không phải mạng má gì.</summary>
+    private static bool LooksUnsupported(string err) =>
+        err.Contains("Unsupported URL", StringComparison.OrdinalIgnoreCase)
+        || err.Contains("Unable to extract", StringComparison.OrdinalIgnoreCase)
+        || err.Contains("No video formats", StringComparison.OrdinalIgnoreCase)
+        || err.Contains("no suitable formats", StringComparison.OrdinalIgnoreCase)
+        || err.Contains("There's no video", StringComparison.OrdinalIgnoreCase);
 
     private void SetStatus(string text)
     {
@@ -464,6 +502,7 @@ public partial class MainWindow : Window
         // lần tải mới -> file cũ không còn liên quan nữa
         _lastSavedPath = "";
         BtnOpenVideo.IsEnabled = false;
+        HideRescue();
 
         _runner = new YtDlpRunner();
         _runner.LineReceived += line => Dispatcher.Invoke(() => AppendLog(line));
@@ -518,6 +557,7 @@ public partial class MainWindow : Window
         else
         {
             SetStatus(Loc.T("failed"));
+            ShowRescue(TxtUrl.Text.Trim(), result.StdErr);
             if (!string.IsNullOrWhiteSpace(result.StdErr))
                 AppendLog(Environment.NewLine + "--- LỖI ---" + Environment.NewLine + result.StdErr);
         }

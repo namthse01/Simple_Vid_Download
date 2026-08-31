@@ -88,6 +88,16 @@ public static class Loc
         ["msgFileGone"]  = ["Không tìm thấy file nữa — có thể đã bị di chuyển hoặc xoá:\n{0}",
                             "The file is no longer there — it may have been moved or deleted:\n{0}"],
 
+        // --- bang cuu canh khi tai loi ---
+        ["rescueTitle"]  = ["Trang này không tải thẳng được",
+                            "This page can't be downloaded directly"],
+        ["rescueBody"]   = ["Đừng lo, app vẫn tải được. Bấm nút bên cạnh để mở trang trong trình duyệt, phát video lên rồi app sẽ tự bắt lấy link.",
+                            "Not a dead end. Hit the button, play the video in the built-in browser, and the app grabs the link itself."],
+        ["rescueTitle2"] = ["Tải không thành công", "The download didn't go through"],
+        ["rescueBody2"]  = ["Thử cách khác xem: mở trang trong trình duyệt rồi phát video, app sẽ tự bắt link.",
+                            "Try the other way: open the page in the built-in browser and play the video — the app grabs the link itself."],
+        ["rescueBtn"]    = ["🌐  Thử cách này", "🌐  Try this instead"],
+
         ["logHeader"]    = ["NHẬT KÝ", "LOG"],
         ["logHint"]      = ["Tiến trình tải sẽ hiện ở đây.", "Download progress shows up here."],
 

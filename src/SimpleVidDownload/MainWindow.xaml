@@ -21,6 +21,7 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
       <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
 
@@ -149,8 +150,31 @@
               ToolTip="Mở trình duyệt nhúng để bắt link video — dùng khi dán link báo Unsupported URL"/>
     </WrapPanel>
 
+    <!-- ===== bảng cứu cánh khi tải lỗi =====
+         Người dùng gặp lỗi thường nghĩ app hỏng rồi bỏ đi, chứ không biết còn chế độ
+         bắt video. Nên khi lỗi thì đập thẳng vào mặt một bảng vàng kèm nút to. -->
+    <Border x:Name="PanelRescue" Grid.Row="3" Visibility="Collapsed"
+            Background="{StaticResource Warn}" CornerRadius="9" Padding="12,10" Margin="0,0,0,8">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
+          <TextBlock x:Name="LblRescueTitle" Foreground="{StaticResource Ink}"
+                     FontWeight="Bold" FontSize="13" Text="Trang này không tải thẳng được"/>
+          <TextBlock x:Name="LblRescueBody" Foreground="{StaticResource Ink}" FontSize="11.5"
+                     TextWrapping="Wrap" Margin="0,3,0,0" Opacity="0.85" Text=""/>
+        </StackPanel>
+        <Button x:Name="BtnRescue" Grid.Column="1" VerticalAlignment="Center"
+                Style="{StaticResource BtnBase}" Background="{StaticResource Ink}"
+                Foreground="{StaticResource Warn}" Padding="16,8" FontSize="12.5"
+                Content="🌐  Thử cách này" Click="BtnRescue_Click"/>
+      </Grid>
+    </Border>
+
     <!-- ===== tiến độ + trạng thái ===== -->
-    <Border Grid.Row="3" Background="{StaticResource Card}" CornerRadius="9"
+    <Border Grid.Row="4" Background="{StaticResource Card}" CornerRadius="9"
             Padding="11,8" Margin="0,0,0,8">
       <Grid>
         <Grid.RowDefinitions>
@@ -175,7 +199,7 @@
     </Border>
 
     <!-- ===== nhật ký ===== -->
-    <Grid Grid.Row="4">
+    <Grid Grid.Row="5">
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
