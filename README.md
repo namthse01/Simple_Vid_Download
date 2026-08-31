@@ -9,6 +9,20 @@ browser extension — including the part where it sniffs the video out of a page
 
 **[English](#english) · [Tiếng Việt](#tiếng-việt)**
 
+## Cài đặt / Installation
+
+| | Cách làm |
+|---|---|
+| **1. File cài đặt** *(dễ nhất)* | Tải **`DCDownload-Setup.exe`** ở [Releases](https://github.com/namthse01/Simple_Vid_Download/releases) → nháy đúp → bấm **Cài đặt** |
+| **2. Bản chạy ngay** | Tải **`DCDownload-portable.zip`** → giải nén → chạy `DCDownload.exe` |
+| **3. Từ mã nguồn** | `git clone` repo này → chạy `setup.ps1` *(cần .NET SDK 10)* |
+
+Cách 1 và 2 **không cần cài .NET, Python hay gì khác**. Chỉ Windows 10/11.
+
+<sub>**EN** — 1: grab `DCDownload-Setup.exe` from Releases, double-click, hit install. 2: unzip
+`DCDownload-portable.zip` and run `DCDownload.exe`. 3: clone and run `setup.ps1` (needs .NET SDK 10).
+Options 1 and 2 need nothing pre-installed.</sub>
+
 ![Giao diện chính / Main window](docs/screenshot-main.png)
 
 ---

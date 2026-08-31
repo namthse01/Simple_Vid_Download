@@ -54,11 +54,30 @@ New-Item -ItemType Directory -Path $dist -Force | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Build trinh cai that bai' }
 
 # don rac, chi giu lai file exe
-Get-ChildItem $dist -File | Where-Object { $_.Extension -ne '.exe' } |
+Get-ChildItem $dist -File | Where-Object { $_.Extension -notin '.exe', '.zip' } |
     Remove-Item -Force -ErrorAction SilentlyContinue
 
 $setup = Join-Path $dist 'DCDownload-Setup.exe'
 if (-not (Test-Path $setup)) { throw 'Khong thay DCDownload-Setup.exe' }
+
+# ---- 5. Ban chay ngay (portable): exe + engine, giai nen la chay ----
+$binDir = Join-Path $root 'bin'
+if (Test-Path (Join-Path $binDir 'yt-dlp.exe')) {
+    Say 'Dong goi ban chay ngay (portable)...'
+    $stage = Join-Path $env:TEMP ('dcd_port_' + [guid]::NewGuid().ToString('N').Substring(0,8))
+    New-Item -ItemType Directory -Path $stage -Force | Out-Null
+    Copy-Item (Join-Path $payload 'DCDownload.exe') $stage -Force
+    Copy-Item $binDir (Join-Path $stage 'bin') -Recurse -Force
+    'Giai nen roi chay DCDownload.exe la xong, khong can cai gi.' |
+        Set-Content (Join-Path $stage 'DOC-TRUOC-KHI-CHAY.txt') -Encoding UTF8
+    $zip = Join-Path $dist 'DCDownload-portable.zip'
+    Remove-Item $zip -Force -ErrorAction SilentlyContinue
+    Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -CompressionLevel Optimal
+    Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+    Ok ('dist\DCDownload-portable.zip  ' + [math]::Round((Get-Item $zip).Length / 1MB, 1) + ' MB')
+} else {
+    Warn 'Chua co bin\ nen bo qua ban portable (chay setup.ps1 truoc de tai engine).'
+}
 
 Write-Host ''
 Ok ('dist\DCDownload-Setup.exe  ' + [math]::Round((Get-Item $setup).Length / 1MB, 1) + ' MB')
