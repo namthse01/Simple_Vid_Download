@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+
+    <AssemblyName>DCDownload-Setup</AssemblyName>
+    <RootNamespace>DCDownloadSetup</RootNamespace>
+    <Product>DCDownload Setup</Product>
+    <AssemblyTitle>Cài đặt DCDownload</AssemblyTitle>
+    <Version>2.1.0</Version>
+    <ApplicationIcon>..\SimpleVidDownload\appicon.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="..\SimpleVidDownload\appicon.ico" Link="appicon.ico" />
+    <!-- Bản app tự chứa runtime, do build-installer.ps1 tạo ra trước khi build cái này -->
+    <EmbeddedResource Include="payload\DCDownload.exe" Condition="Exists('payload\DCDownload.exe')">
+      <LogicalName>payload.exe</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

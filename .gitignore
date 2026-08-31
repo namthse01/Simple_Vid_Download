@@ -17,3 +17,6 @@ settings.json
 # Editor
 .vscode/
 .vs/
+dist/
+src/Installer/payload/
+src/Installer/Theme.xaml

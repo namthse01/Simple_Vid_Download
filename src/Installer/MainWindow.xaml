@@ -1,0 +1,81 @@
+<Window x:Class="DCDownloadSetup.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Cài đặt DCDownload" Height="470" Width="640"
+        ResizeMode="CanMinimize" WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Bg}" Foreground="{StaticResource Text}" FontSize="13"
+        FontFamily="Segoe UI" TextOptions.TextFormattingMode="Display">
+
+  <Grid Margin="24,20,24,20">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <!-- ===== đầu trang ===== -->
+    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,18">
+      <Image Source="appicon.ico" Width="52" Height="52" VerticalAlignment="Center"/>
+      <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+        <TextBlock Text="DCDownload" FontSize="22" FontWeight="Bold"/>
+        <TextBlock x:Name="LblSub" Text="DragonCloud Download — tải video từ link"
+                   Foreground="{StaticResource Muted}" FontSize="12.5" Margin="0,2,0,0"/>
+      </StackPanel>
+    </StackPanel>
+
+    <!-- ===== phần chọn lựa (ẩn khi đang cài) ===== -->
+    <StackPanel x:Name="PanelOptions" Grid.Row="1">
+      <TextBlock Text="Cài vào thư mục" Foreground="{StaticResource Muted}" Margin="2,0,0,7"/>
+      <Grid Margin="0,0,0,16">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <TextBox x:Name="TxtPath" Grid.Column="0"/>
+        <Button x:Name="BtnBrowse" Grid.Column="1" Content="Chọn..." Margin="8,0,0,0"
+                Style="{StaticResource BtnGhost}" Click="BtnBrowse_Click"/>
+      </Grid>
+
+      <CheckBox x:Name="ChkDesktop" Content="Tạo shortcut ngoài Desktop" IsChecked="True"
+                Margin="2,0,0,12"/>
+      <CheckBox x:Name="ChkAi" Content="Cài thêm công cụ nâng cấp video bằng AI (+51 MB)"
+                IsChecked="True" Margin="2,0,0,16"
+                ToolTip="Chỉ cần khi bạn muốn nâng video độ phân giải thấp lên nét hơn. Bỏ tick vẫn tải video bình thường."/>
+
+      <Border Background="{StaticResource Card}" CornerRadius="10" Padding="14,12">
+        <StackPanel>
+          <TextBlock Text="Trình cài sẽ tải thêm khoảng 250 MB engine (yt-dlp, ffmpeg, deno)."
+                     TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
+          <TextBlock Text="Cần kết nối mạng trong lúc cài. Không cần cài .NET hay Python gì thêm."
+                     TextWrapping="Wrap" Foreground="{StaticResource Muted}" Margin="0,6,0,0"/>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <!-- ===== phần tiến trình (hiện khi đang cài) ===== -->
+    <StackPanel x:Name="PanelProgress" Grid.Row="1" Visibility="Collapsed" VerticalAlignment="Center">
+      <TextBlock x:Name="LblStatus" Text="Đang chuẩn bị..." TextWrapping="Wrap"
+                 HorizontalAlignment="Center" Margin="0,0,0,14"/>
+      <ProgressBar x:Name="Pb" Minimum="0" Maximum="100" Height="10"/>
+      <TextBlock x:Name="LblHint" Text="" Foreground="{StaticResource Muted}" FontSize="12"
+                 HorizontalAlignment="Center" Margin="0,12,0,0" TextWrapping="Wrap"/>
+    </StackPanel>
+
+    <!-- ===== nút dưới cùng ===== -->
+    <Grid Grid.Row="2" Margin="0,18,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock x:Name="LblFoot" Grid.Column="0" VerticalAlignment="Center" FontSize="11.5"
+                 Foreground="{StaticResource Muted}" Text="Phiên bản 2.1.0"/>
+      <StackPanel Grid.Column="1" Orientation="Horizontal">
+        <Button x:Name="BtnCancel" Content="Thoát" Style="{StaticResource BtnGhost}"
+                Padding="18,10" Margin="0,0,10,0" Click="BtnCancel_Click"/>
+        <Button x:Name="BtnGo" Content="Cài đặt" Style="{StaticResource BtnBase}"
+                Background="{StaticResource Go}" Padding="26,10" FontSize="14"
+                Click="BtnGo_Click"/>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</Window>

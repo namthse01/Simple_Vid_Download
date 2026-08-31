@@ -27,6 +27,28 @@ video and audio at full quality.
 What it adds on top of plain yt-dlp is **Capture mode**: an embedded browser that watches network
 traffic and grabs the stream URL out of pages yt-dlp doesn't know how to parse.
 
+### Just want to use it? Run the installer
+
+Grab **`DCDownload-Setup.exe`**, double-click, pick a folder, done. It puts the app in place, pulls
+the engines down with a progress bar, and adds Start Menu and Desktop shortcuts. The app then shows
+up in Windows' *Installed apps* list like any other program, so you can remove it from there.
+
+The target machine needs **nothing** installed first — no .NET, no Python. The setup carries the
+whole app (including the .NET runtime) inside it.
+
+- Installer size: ~118 MB · downloads ~250 MB of engines during install · ~615 MB once installed
+- Installs per-user into `%LOCALAPPDATA%\Programs\DCDownload`, so it never asks for admin rights
+- The AI upscaling tool (+51 MB) is a checkbox — untick it if you do not want it
+
+To build the installer yourself:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File build-installer.ps1
+```
+
+It publishes the app self-contained, embeds it into the setup program, and writes
+`dist\DCDownload-Setup.exe`.
+
 ### Build and install (once, after cloning)
 
 ```powershell
@@ -219,7 +241,28 @@ TikTok, X/Twitter, Instagram, Twitch, Bilibili, SoundCloud, Vimeo, Dailymotion..
 Điểm hơn yt-dlp thuần là chế độ **Bắt video từ trang web**: một trình duyệt nhúng nghe tầng mạng
 và chộp link stream ngay cả với những trang yt-dlp không đọc được.
 
-### Cài đặt (chỉ làm 1 lần sau khi clone)
+### Chỉ muốn dùng thôi? Chạy file cài đặt
+
+Lấy file **`DCDownload-Setup.exe`**, nháy đúp, chọn thư mục, xong. Nó tự đặt app vào chỗ, tải engine
+kèm thanh tiến độ, tạo shortcut ở Start Menu và Desktop. Sau đó app hiện trong danh sách *Ứng dụng đã
+cài* của Windows như mọi phần mềm khác, muốn gỡ thì gỡ ngay ở đó.
+
+Máy nhận **không cần cài gì trước** — không .NET, không Python. File cài mang sẵn cả app lẫn .NET
+runtime bên trong.
+
+- File cài ~118 MB · lúc cài tải thêm ~250 MB engine · cài xong chiếm ~615 MB
+- Cài theo người dùng vào `%LOCALAPPDATA%\Programs\DCDownload` nên **không cần quyền admin**
+- Công cụ nâng cấp AI (+51 MB) là một ô tick — không cần thì bỏ tick
+
+Muốn tự đóng gói file cài:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File build-installer.ps1
+```
+
+Script build app kèm sẵn runtime, nhúng vào trình cài, rồi xuất ra `dist\DCDownload-Setup.exe`.
+
+### Cài đặt cho người sửa code (sau khi clone)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File setup.ps1
