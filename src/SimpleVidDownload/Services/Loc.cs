@@ -78,7 +78,7 @@ public static class Loc
 
         ["download"]     = ["⬇   TẢI XUỐNG", "⬇   DOWNLOAD"],
         ["cancel"]       = ["✖   HỦY", "✖   CANCEL"],
-        ["capture"]      = ["🌐   Bắt video từ trang web", "🌐   Capture from a web page"],
+        ["capture"]      = ["🌐  Bắt video từ web", "🌐  Capture from web"],
         ["captureTip"]   = ["Mở trình duyệt nhúng để bắt link video — dùng khi dán link báo Unsupported URL",
                             "Opens an embedded browser to sniff the video link — use it when a link gives Unsupported URL"],
 

@@ -21,8 +21,8 @@
     <Setter Property="Foreground" Value="{StaticResource Ink}"/>
     <Setter Property="Background" Value="{StaticResource Accent}"/>
     <Setter Property="FontWeight" Value="SemiBold"/>
-    <Setter Property="FontSize" Value="13"/>
-    <Setter Property="Padding" Value="16,9"/>
+    <Setter Property="FontSize" Value="12.5"/>
+    <Setter Property="Padding" Value="12,6"/>
     <Setter Property="Cursor" Value="Hand"/>
     <Setter Property="SnapsToDevicePixels" Value="True"/>
     <Setter Property="Template">
@@ -61,7 +61,7 @@
     <Setter Property="CaretBrush" Value="{StaticResource Text}"/>
     <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
     <Setter Property="BorderThickness" Value="1"/>
-    <Setter Property="Padding" Value="10,8"/>
+    <Setter Property="Padding" Value="9,6"/>
     <Setter Property="FontSize" Value="13"/>
     <Setter Property="VerticalContentAlignment" Value="Center"/>
     <Setter Property="Template">
@@ -188,7 +188,7 @@
   <Style TargetType="ComboBox">
     <Setter Property="Foreground" Value="{StaticResource Text}"/>
     <Setter Property="FontSize" Value="13"/>
-    <Setter Property="Height" Value="34"/>
+    <Setter Property="Height" Value="28"/>
     <Setter Property="VerticalAlignment" Value="Center"/>
     <Setter Property="Template">
       <Setter.Value>
@@ -224,7 +224,7 @@
     <Setter Property="Background" Value="{StaticResource Field}"/>
     <Setter Property="Foreground" Value="{StaticResource Go}"/>
     <Setter Property="BorderThickness" Value="0"/>
-    <Setter Property="Height" Value="8"/>
+    <Setter Property="Height" Value="7"/>
   </Style>
 
   <Style TargetType="ListBoxItem">
