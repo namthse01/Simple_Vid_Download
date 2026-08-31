@@ -16,6 +16,9 @@ public partial class CaptureWindow : Window
 {
     private readonly ObservableCollection<CapturedLink> _links = new();
     private readonly HashSet<string> _seen = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Người dùng đã tự bấm chọn một dòng chưa — nếu rồi thì đừng tự đổi lựa chọn của họ.</summary>
+    private bool _userPicked;
     private readonly string _startUrl;
 
     /// <summary>Link người dùng đã chọn (null nếu đóng cửa sổ mà không chọn).</summary>
@@ -28,6 +31,7 @@ public partial class CaptureWindow : Window
         InitializeComponent();
         _startUrl = startUrl.StartsWith("http") ? startUrl : "";
         LstLinks.ItemsSource = _links;
+        LstLinks.PreviewMouseDown += (_, _) => _userPicked = true;
         TxtAddr.Text = string.IsNullOrEmpty(_startUrl) ? "https://" : _startUrl;
 
         Title = Loc.T("capTitle");
@@ -67,6 +71,14 @@ public partial class CaptureWindow : Window
         core.WebResourceRequested += OnResourceRequested;
         core.WebResourceResponseReceived += OnResponseReceived;
         core.SourceChanged += (_, _) => TxtAddr.Text = core.Source;
+
+        // Sang trang khac thi XOA danh sach cu.
+        // Khong xoa thi link cua video truoc van nam dau danh sach va bi chon nham.
+        core.NavigationStarting += (_, e) =>
+        {
+            if (e.IsRedirected) return;   // chuyen huong cua cung trang thi giu nguyen
+            Dispatcher.Invoke(ResetLinks);
+        };
 
         if (!string.IsNullOrEmpty(_startUrl))
         {
@@ -108,8 +120,21 @@ public partial class CaptureWindow : Window
             if (!_seen.Add(link.Url)) return;
             _links.Add(link);
             LblCount.Text = string.Format(Loc.T("capCount"), _links.Count);
-            if (LstLinks.SelectedIndex < 0) LstLinks.SelectedIndex = 0;
+
+            // Tu chon link TOT NHAT chu khong phai link dau tien: link dau thuong la trang
+            // player trung gian, stream that den sau. Nguoi dung da tu bam thi ton trong.
+            if (!_userPicked) LstLinks.SelectedItem = MediaSniffer.PickBest(_links);
         });
+    }
+
+    /// <summary>Xoá sạch link đã bắt (gọi khi chuyển sang trang khác).</summary>
+    private void ResetLinks()
+    {
+        _links.Clear();
+        _seen.Clear();
+        _userPicked = false;
+        LstLinks.SelectedIndex = -1;
+        LblCount.Text = "";
     }
 
     // ================= các nút =================
