@@ -99,6 +99,16 @@ public static class Loc
         ["rescueBtn"]    = ["🌐  Thử cách này", "🌐  Try this instead"],
 
         ["logHeader"]    = ["NHẬT KÝ", "LOG"],
+        ["logOpen"]      = ["Xem đầy đủ", "View full"],
+        ["logOpenTip"]   = ["Mở toàn bộ nhật ký — dùng khi cần xem lỗi cho rõ",
+                            "Open the full log — handy when you need to read an error properly"],
+        ["logWinTitle"]  = ["Nhật ký đầy đủ", "Full log"],
+        ["logCopy"]      = ["Copy", "Copy"],
+        ["logSave"]      = ["Lưu ra file...", "Save to file..."],
+        ["logClose"]     = ["Đóng", "Close"],
+        ["logEmpty"]     = ["Chưa có gì trong nhật ký.", "Nothing in the log yet."],
+        ["logCopied"]    = ["Đã copy toàn bộ nhật ký.", "Copied the whole log."],
+        ["logSavedTo"]   = ["Đã lưu: ", "Saved: "],
         ["logHint"]      = ["Tiến trình tải sẽ hiện ở đây.", "Download progress shows up here."],
 
         // --- trạng thái ---

@@ -232,6 +232,8 @@ public partial class MainWindow : Window
         BtnOpenVideo.ToolTip = Loc.T("openVideoTip");
 
         LblLogHeader.Text = Loc.T("logHeader");
+        BtnLog.Content = Loc.T("logOpen");
+        BtnLog.ToolTip = Loc.T("logOpenTip");
         LblLogHint.Text = Loc.T("logHint");
 
         if (!_statusDirty) LblStatus.Text = Loc.T("ready");
@@ -330,6 +332,11 @@ public partial class MainWindow : Window
 
         // UseShellExecute = mở bằng trình phát mặc định của máy
         Process.Start(new ProcessStartInfo(_lastSavedPath) { UseShellExecute = true });
+    }
+
+    private void BtnLog_Click(object sender, RoutedEventArgs e)
+    {
+        new LogWindow(_log.ToString()) { Owner = this }.ShowDialog();
     }
 
     private void BtnCapture_Click(object sender, RoutedEventArgs e) => OpenCapture(TxtUrl.Text.Trim());
