@@ -211,11 +211,16 @@
                 HorizontalAlignment="Right" Padding="9,3" FontSize="11"
                 Click="BtnLog_Click"/>
       </Grid>
-      <Border Grid.Row="1" Background="{StaticResource Sunken}" CornerRadius="9" Padding="4" MinHeight="44">
+      <Border Grid.Row="1" Background="{StaticResource Sunken}" CornerRadius="9" Padding="4" MinHeight="30">
         <Grid>
-          <TextBox x:Name="TxtLog" IsReadOnly="True" TextWrapping="Wrap"
-                   Background="Transparent" BorderThickness="0" Padding="8,6"
-                   VerticalContentAlignment="Stretch" VerticalScrollBarVisibility="Auto"
+          <!-- Chi de liec qua vai dong cuoi: KHONG cuon, KHONG xuong dong.
+               Muon xem het thi bam nut "Xem day du". -->
+          <TextBox x:Name="TxtLog" IsReadOnly="True" TextWrapping="NoWrap"
+                   Background="Transparent" BorderThickness="0" Padding="8,5"
+                   IsHitTestVisible="False" Focusable="False"
+                   VerticalContentAlignment="Top"
+                   VerticalScrollBarVisibility="Disabled"
+                   HorizontalScrollBarVisibility="Disabled"
                    FontFamily="Consolas" FontSize="11.5" Foreground="{StaticResource Muted}"/>
           <TextBlock x:Name="LblLogHint" IsHitTestVisible="False" Margin="10,8,0,0" FontSize="12"
                      VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#585B70"

@@ -264,12 +264,28 @@ public partial class MainWindow : Window
         catch { }
     }
 
+    /// <summary>Số dòng cuối hiện ở cửa sổ chính — vừa đủ liếc, không cần cuộn.</summary>
+    private const int PreviewLines = 3;
+
     private void AppendLog(string line)
     {
         _log.AppendLine(line);
-        if (_log.Length > 12000) _log.Remove(0, _log.Length - 12000);
-        TxtLog.Text = _log.ToString();
-        TxtLog.ScrollToEnd();
+        if (_log.Length > 40000) _log.Remove(0, _log.Length - 40000);
+        TxtLog.Text = LastLines(_log.ToString(), PreviewLines);
+    }
+
+    /// <summary>Lấy vài dòng cuối, bỏ dòng trống, để ô xem nhanh luôn vừa khít.</summary>
+    private static string LastLines(string text, int n)
+    {
+        // dung ma ky tu thay cho ky tu thoat cho chac an
+        var lines = text.Split((char)10);
+        var keep = new List<string>();
+        for (int i = lines.Length - 1; i >= 0 && keep.Count < n; i--)
+        {
+            var l = lines[i].TrimEnd((char)13);
+            if (l.Trim().Length > 0) keep.Insert(0, l);
+        }
+        return string.Join(Environment.NewLine, keep);
     }
 
     private string SelectedBrowser =>
