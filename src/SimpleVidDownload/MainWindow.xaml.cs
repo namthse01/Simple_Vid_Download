@@ -63,6 +63,7 @@ public partial class MainWindow : Window
             TryFillFromClipboard();
             TxtUrl.Focus();
             _ = InitUpscaleAsync();
+            GrowToFit();   // máy cỡ chữ/DPI khác có thể cần cao hơn — nới ra chứ đừng cắt chữ
         };
 
         Closing += (_, _) =>
@@ -380,7 +381,49 @@ public partial class MainWindow : Window
 
     // ================= bảng cứu cánh khi tải lỗi =================
 
-    private void HideRescue() => PanelRescue.Visibility = Visibility.Collapsed;
+    /// <summary>Chiều cao tối thiểu lúc bình thường — đo thực tế: dưới mức này là cắt mất chữ.</summary>
+    private const double MinNormalHeight = 470;
+
+    /// <summary>Chiều cao cửa sổ trước khi phình ra vì bảng cứu cánh, để còn trả lại.</summary>
+    private double _heightBeforeRescue;
+
+    private void HideRescue()
+    {
+        PanelRescue.Visibility = Visibility.Collapsed;
+        if (_heightBeforeRescue > 0 && WindowState == WindowState.Normal)
+        {
+            MinHeight = MinNormalHeight;        // nới trần trước, không thì Height bị chặn lại
+            Height = _heightBeforeRescue;
+            _heightBeforeRescue = 0;
+        }
+    }
+
+    /// <summary>
+    /// Nội dung cao hơn khung nhìn thì nới cửa sổ ra cho vừa, chứ không hiện thanh cuộn —
+    /// thanh cuộn ở màn hình chính trông rất chướng.
+    /// </summary>
+    /// <param name="remember">Có nhớ chiều cao cũ để lát nữa thu lại không (chỉ bảng cứu cánh cần).</param>
+    private void GrowToFit(bool remember = false)
+    {
+        if (WindowState != WindowState.Normal) return;
+
+        // đợi WPF bố trí lại xong mới đo được phần thiếu
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            Scroller.UpdateLayout();
+            double thieu = Scroller.ExtentHeight - Scroller.ViewportHeight;
+            if (thieu <= 0.5) return;
+
+            if (remember && _heightBeforeRescue <= 0) _heightBeforeRescue = Height;
+
+            var man = SystemParameters.WorkArea;
+            Height = Math.Min(Height + thieu + 2, man.Height);
+            if (Top + Height > man.Bottom) Top = Math.Max(man.Top, man.Bottom - Height);
+
+            // chặn luôn chiều cao tối thiểu, kẻo kéo nhỏ lại là bảng cứu cánh bị cắt cụt
+            if (remember) MinHeight = Math.Min(Height, man.Height);
+        }), System.Windows.Threading.DispatcherPriority.Loaded);
+    }
 
     /// <summary>
     /// Hiện bảng vàng kèm nút to. Lỗi kiểu "trang không hỗ trợ" thì nói thẳng là chế độ bắt video
@@ -393,6 +436,7 @@ public partial class MainWindow : Window
         LblRescueTitle.Text = Loc.T(notSupported ? "rescueTitle" : "rescueTitle2");
         LblRescueBody.Text = Loc.T(notSupported ? "rescueBody" : "rescueBody2");
         PanelRescue.Visibility = Visibility.Visible;
+        GrowToFit(remember: true);
     }
 
     /// <summary>Lỗi do yt-dlp không đọc được trang, chứ không phải mạng má gì.</summary>
