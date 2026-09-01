@@ -22,6 +22,7 @@
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="*"/>
         <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
       <Button x:Name="BtnBack" Grid.Column="0" Content="◀" Width="42"
               Style="{StaticResource BtnGhost}" FontWeight="Bold"
@@ -29,6 +30,9 @@
       <TextBox x:Name="TxtAddr" Grid.Column="1" Margin="8,0,8,0" KeyDown="TxtAddr_KeyDown"/>
       <Button x:Name="BtnGo" Grid.Column="2" Content="Đi" Width="56"
               Style="{StaticResource BtnBase}" Click="BtnGo_Click"/>
+      <CheckBox x:Name="ChkAdBlock" Grid.Column="3" Content="Chặn quảng cáo" IsChecked="True"
+                VerticalAlignment="Center" Margin="12,0,0,0"
+                Checked="ChkAdBlock_Changed" Unchecked="ChkAdBlock_Changed"/>
     </Grid>
 
     <!-- khung trình duyệt -->

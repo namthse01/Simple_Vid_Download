@@ -107,6 +107,7 @@ The whole interface speaks English too — hit **EN** in the header:
 | Update engine | Refreshes yt-dlp — press this first when YouTube suddenly breaks |
 | Language | **VI / EN** buttons in the header switch the whole interface; your choice is remembered |
 | AI upscale | Optional, off by default — only offered when your GPU can actually run it |
+| Ad blocking | On by default inside capture mode — blocks ad networks, banners and pop-unders, and strips the invisible overlay that hijacks your first click. Untick if a page renders wrong |
 | **Capture from a web page** | The Video DownloadHelper-style mode, described below |
 
 ### Capture mode — for pages yt-dlp reports as `Unsupported URL`
@@ -315,6 +316,7 @@ tự điền luôn vào ô.
 | Cập nhật engine | Cập nhật yt-dlp — bấm cái này đầu tiên khi YouTube đột nhiên tải lỗi |
 | Đổi ngôn ngữ | Nút **VI / EN** ở góc trên đổi toàn bộ giao diện; app nhớ lựa chọn của bạn |
 | Nâng cấp AI | Tùy chọn, mặc định tắt — chỉ hiện dùng được khi GPU máy bạn chạy nổi |
+| Chặn quảng cáo | Mặc định bật trong chế độ bắt video — chặn mạng quảng cáo, banner, cửa sổ bật ngầm, và gỡ lớp phủ trong suốt nuốt cú bấm đầu tiên. Trang nào hiện thiếu thì bỏ tick |
 | **Bắt video từ trang web** | Chế độ "y như Video DownloadHelper", xem mục dưới |
 
 ### Bắt video từ trang web — khi dán link báo `Unsupported URL`

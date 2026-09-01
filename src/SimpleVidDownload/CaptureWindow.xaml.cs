@@ -21,6 +21,14 @@ public partial class CaptureWindow : Window
     private bool _userPicked;
     private readonly string _startUrl;
 
+    private CoreWebView2Environment? _env;
+    private bool _adOn = true;
+    private int _adBlocked;
+    private string? _adScriptId;
+
+    /// <summary>Địa chỉ trang người dùng đang mở — không bao giờ chặn chính nó.</summary>
+    private string _topUrl = "";
+
     /// <summary>Link người dùng đã chọn (null nếu đóng cửa sổ mà không chọn).</summary>
     public CapturedLink? Chosen { get; private set; }
     /// <summary>Tiêu đề trang lúc chọn — dùng đặt tên file.</summary>
@@ -40,6 +48,8 @@ public partial class CaptureWindow : Window
         BtnGo.Content = Loc.T("capGo");
         BtnUse.Content = Loc.T("capUse");
         BtnCopy.Content = Loc.T("capCopy");
+        ChkAdBlock.Content = Loc.T("capAdBlock");
+        ChkAdBlock.ToolTip = Loc.T("capAdBlockTip");
 
         Loaded += async (_, _) => await InitWebViewAsync();
         Closed += (_, _) => Web.Dispose();
@@ -50,6 +60,7 @@ public partial class CaptureWindow : Window
         try
         {
             var env = await CoreWebView2Environment.CreateAsync(null, AppPaths.WebViewData);
+            _env = env;
             await Web.EnsureCoreWebView2Async(env);
         }
         catch (Exception ex)
@@ -76,9 +87,26 @@ public partial class CaptureWindow : Window
         // Khong xoa thi link cua video truoc van nam dau danh sach va bi chon nham.
         core.NavigationStarting += (_, e) =>
         {
+            _topUrl = e.Uri;              // nho lai de khong chan nham chinh trang nay
             if (e.IsRedirected) return;   // chuyen huong cua cung trang thi giu nguyen
             Dispatcher.Invoke(ResetLinks);
         };
+
+        // Popunder: bam vao dau cung bat cua so moi. Khong bao gio mo cua so moi ca —
+        // nguoi dung that su bam thi mo ngay tai day cho khoi cut duong.
+        core.NewWindowRequested += (_, e) =>
+        {
+            if (!_adOn) return;
+            e.Handled = true;
+
+            bool laQuangCao = AdBlock.ShouldBlock(e.Uri, isDocument: true, isTopLevel: false);
+            if (!e.IsUserInitiated || laQuangCao) { Blocked(); return; }
+
+            try { core.Navigate(e.Uri); } catch { }
+        };
+
+        try { _adScriptId = await core.AddScriptToExecuteOnDocumentCreatedAsync(AdBlock.PageScript); }
+        catch { }
 
         if (!string.IsNullOrEmpty(_startUrl))
         {
@@ -90,6 +118,18 @@ public partial class CaptureWindow : Window
     private void OnResourceRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs e)
     {
         var url = e.Request.Uri;
+
+        if (_adOn && _env is not null
+            && AdBlock.ShouldBlock(url,
+                   isDocument: e.ResourceContext == CoreWebView2WebResourceContext.Document,
+                   isTopLevel: string.Equals(url, _topUrl, StringComparison.OrdinalIgnoreCase)))
+        {
+            // 204 = không có nội dung: trang chạy tiếp bình thường, chỉ là chẳng nhận được gì.
+            e.Response = _env.CreateWebResourceResponse(null, 204, "No Content", "");
+            Blocked();
+            return;
+        }
+
         if (MediaSniffer.ShouldSkip(url)) return;
 
         var kind = MediaSniffer.KindFromUrl(url);
@@ -119,7 +159,7 @@ public partial class CaptureWindow : Window
         {
             if (!_seen.Add(link.Url)) return;
             _links.Add(link);
-            LblCount.Text = string.Format(Loc.T("capCount"), _links.Count);
+            UpdateCounts();
 
             // Tu chon link TOT NHAT chu khong phai link dau tien: link dau thuong la trang
             // player trung gian, stream that den sau. Nguoi dung da tu bam thi ton trong.
@@ -134,7 +174,53 @@ public partial class CaptureWindow : Window
         _seen.Clear();
         _userPicked = false;
         LstLinks.SelectedIndex = -1;
-        LblCount.Text = "";
+        _adBlocked = 0;
+        UpdateCounts();
+    }
+
+    /// <summary>Đếm thêm một thứ vừa chặn được (gọi từ luồng nào cũng an toàn).</summary>
+    private void Blocked()
+    {
+        _adBlocked++;
+        if (Dispatcher.CheckAccess()) UpdateCounts();
+        else Dispatcher.BeginInvoke(UpdateCounts);
+    }
+
+    private void UpdateCounts()
+    {
+        var s = _links.Count > 0 ? string.Format(Loc.T("capCount"), _links.Count) : "";
+        if (_adOn && _adBlocked > 0)
+            s = (s.Length > 0 ? s + "   ·   " : "") + string.Format(Loc.T("capAdsBlocked"), _adBlocked);
+        LblCount.Text = s;
+    }
+
+    /// <summary>Tắt/bật chặn quảng cáo rồi tải lại trang cho thấy ngay khác biệt.</summary>
+    private async void ChkAdBlock_Changed(object sender, RoutedEventArgs e)
+    {
+        _adOn = ChkAdBlock.IsChecked == true;
+
+        // Ô tick nằm trước khung duyệt trong XAML nên sự kiện này bắn ngay lúc dựng giao diện,
+        // lúc đó Web còn chưa tồn tại — phải hỏi null cả chính nó, không riêng CoreWebView2.
+        var core = Web?.CoreWebView2;
+        if (core is null) return;
+
+        try
+        {
+            if (_adOn)
+            {
+                _adScriptId = await core.AddScriptToExecuteOnDocumentCreatedAsync(AdBlock.PageScript);
+            }
+            else if (_adScriptId is not null)
+            {
+                core.RemoveScriptToExecuteOnDocumentCreated(_adScriptId);
+                _adScriptId = null;
+            }
+
+            _adBlocked = 0;
+            UpdateCounts();
+            core.Reload();
+        }
+        catch { }
     }
 
     // ================= các nút =================
