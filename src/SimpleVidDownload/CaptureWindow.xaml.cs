@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Threading;
 using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
 using SimpleVidDownload.Services;
@@ -23,6 +25,30 @@ public partial class CaptureWindow : Window
     private CapturedLink? _active;
     /// <summary>Địa chỉ trang hiện tại, kể cả khi trang tự đổi địa chỉ không tải lại (story tự chuyển).</summary>
     private string _pageUrl = "";
+
+    /// <summary>
+    /// Mỗi giây hỏi trang xem thẻ video đang hiện dài bao nhiêu giây — cách duy nhất bám theo
+    /// người dùng bấm chuyển thẻ trong story, vì thẻ kế đã được tải sẵn, phát từ bộ đệm,
+    /// không sinh thêm request mạng nào.
+    /// </summary>
+    private readonly DispatcherTimer _watch = new() { Interval = TimeSpan.FromSeconds(1) };
+
+    /// <summary>
+    /// Lúc người dùng vừa bấm chuột trong trang. Story TỰ CHẠY sang thẻ kế sau vài giây, nên
+    /// chỉ thẻ hiện ra NGAY SAU cú bấm mới là thẻ người dùng thật sự muốn — thẻ tự nhảy đến
+    /// sau đó thì bỏ qua, kẻo vừa ngắm đúng thẻ xong bấm tải lại ra thẻ khác.
+    /// </summary>
+    private DateTime _lastUserClickAt = DateTime.MinValue;
+    private static readonly TimeSpan UserWindow = TimeSpan.FromSeconds(4);
+
+    /// <summary>Thẻ vừa xuất hiện là do người dùng tự bấm chuyển (chứ không phải story tự chạy)?</summary>
+    private bool ByUserNow => DateTime.Now - _lastUserClickAt <= UserWindow;
+
+    /// <summary>Báo về cho app mỗi lần người dùng bấm trong trang. Dùng pointerdown + capture
+    /// để nghe được cả khi trang tự chặn sự kiện ở tầng trên.</summary>
+    private const string ClickReporter =
+        "try{document.addEventListener('pointerdown',function(){" +
+        "try{window.chrome.webview.postMessage('u');}catch(e){}},true);}catch(e){}";
 
     /// <summary>Người dùng đã tự bấm chọn một dòng chưa — nếu rồi thì đừng tự đổi lựa chọn của họ.</summary>
     private bool _userPicked;
@@ -61,7 +87,11 @@ public partial class CaptureWindow : Window
         ChkAdBlock.ToolTip = Loc.T("capAdBlockTip");
 
         Loaded += async (_, _) => await InitWebViewAsync();
-        Closed += (_, _) => Web.Dispose();
+        Closed += (_, _) =>
+        {
+            _watch.Stop();
+            Web.Dispose();
+        };
     }
 
     private async Task InitWebViewAsync()
@@ -122,10 +152,48 @@ public partial class CaptureWindow : Window
         try { _adScriptId = await core.AddScriptToExecuteOnDocumentCreatedAsync(AdBlock.PageScript); }
         catch { }
 
+        core.WebMessageReceived += (_, _) => _lastUserClickAt = DateTime.Now;
+        try { await core.AddScriptToExecuteOnDocumentCreatedAsync(ClickReporter); } catch { }
+
+        _watch.Tick += async (_, _) => await WatchPlayingAsync();
+        _watch.Start();
+
         if (!string.IsNullOrEmpty(_startUrl))
         {
             try { core.Navigate(_startUrl); } catch { }
         }
+    }
+
+    /// <summary>Thẻ video to nhất đang trong khung nhìn (ưu tiên thẻ đang phát): trả về độ dài.</summary>
+    private const string JsPlaying =
+        "(function(){var best=null,bs=-1;var vs=document.querySelectorAll('video');" +
+        "for(var i=0;i<vs.length;i++){var v=vs[i];var r=v.getBoundingClientRect();" +
+        "if(r.width<80||r.height<80)continue;" +
+        "if(r.bottom<=0||r.right<=0||r.top>=innerHeight||r.left>=innerWidth)continue;" +
+        "var s=r.width*r.height+(v.paused?0:1e7);if(s>bs){bs=s;best=v;}}" +
+        "if(!best||!best.duration||!isFinite(best.duration))return 'x';" +
+        "return String(best.duration);})()";
+
+    private async Task WatchPlayingAsync()
+    {
+        var core = Web?.CoreWebView2;
+        if (core is null || _links.Count == 0) return;
+        try
+        {
+            var raw = await core.CallDevToolsProtocolMethodAsync("Runtime.evaluate",
+                JsonSerializer.Serialize(new { expression = JsPlaying, returnByValue = true }));
+            using var doc = JsonDocument.Parse(raw);
+            if (!doc.RootElement.TryGetProperty("result", out var r)
+                || !r.TryGetProperty("value", out var v)
+                || v.ValueKind != JsonValueKind.String) return;
+            if (!double.TryParse(v.GetString(),
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var seconds)) return;
+
+            var hit = MediaSniffer.ByDuration(_links, seconds);
+            if (hit is not null && (_active is null || ByUserNow)) SetChoice(hit);
+        }
+        catch { }
     }
 
     // nhận diện theo hình dạng URL
@@ -232,17 +300,32 @@ public partial class CaptureWindow : Window
             }
 
             // video đang phát là link được xin khúc gần nhất -> đánh dấu ▶ cho dễ nhận
-            if (substantial && link.Kind != MediaSniffer.AUDIO && !ReferenceEquals(_active, link))
+            if (substantial && link.Kind != MediaSniffer.AUDIO)
             {
-                _active?.SetActive(false);
-                link.SetActive(true);
-                _active = link;
+                if (_active is null || ByUserNow) SetChoice(link);
+                return;
             }
 
-            // Tu chon link TOT NHAT chu khong phai link dau tien: link dau thuong la trang
-            // player trung gian, stream that den sau. Nguoi dung da tu bam thi ton trong.
-            if (!_userPicked) LstLinks.SelectedItem = MediaSniffer.PickBest(_links, _pageUrl);
+            // Chưa có tín hiệu nào về video đang phát thì tạm đoán, để luôn có sẵn một lựa chọn.
+            // Link dau thuong la trang player trung gian, stream that den sau.
+            if (_active is null && !_userPicked)
+                LstLinks.SelectedItem = MediaSniffer.PickBest(_links, _pageUrl);
         });
+    }
+
+    /// <summary>
+    /// Chốt link đang phát: dấu ▶ và dòng được chọn LUÔN là một. Người dùng đã tự bấm chọn
+    /// thì chỉ đổi dấu ▶, không giành lấy lựa chọn của họ.
+    /// </summary>
+    private void SetChoice(CapturedLink link)
+    {
+        if (!ReferenceEquals(_active, link))
+        {
+            _active?.SetActive(false);
+            link.SetActive(true);
+            _active = link;
+        }
+        if (!_userPicked) LstLinks.SelectedItem = link;
     }
 
     /// <summary>Xoá sạch link đã bắt (gọi khi chuyển sang trang khác).</summary>
@@ -323,8 +406,14 @@ public partial class CaptureWindow : Window
         if (Web.CoreWebView2?.CanGoBack == true) Web.CoreWebView2.GoBack();
     }
 
+    /// <summary>
+    /// Người dùng tự bấm chọn thì tôn trọng; không thì lấy link đang phát (dấu ▶) —
+    /// đó là thứ hai tín hiệu (hoạt động mạng + độ dài thẻ đang hiện) cùng chỉ vào.
+    /// </summary>
     private CapturedLink? CurrentSelection =>
-        LstLinks.SelectedItem as CapturedLink ?? MediaSniffer.PickBest(_links, _pageUrl);
+        _userPicked
+            ? LstLinks.SelectedItem as CapturedLink
+            : _active ?? LstLinks.SelectedItem as CapturedLink ?? MediaSniffer.PickBest(_links, _pageUrl);
 
     private void BtnCopy_Click(object sender, RoutedEventArgs e)
     {
@@ -362,12 +451,15 @@ public partial class CaptureWindow : Window
             var sb = new StringBuilder();
             sb.AppendLine("page:   " + _pageUrl);
             sb.AppendLine("title:  " + PageTitle);
+            sb.AppendLine("click:  " + (_lastUserClickAt == DateTime.MinValue
+                ? "-" : _lastUserClickAt.ToString("HH:mm:ss.fff")));
             sb.AppendLine("chosen: " + chosen.Url);
             sb.AppendLine("audio:  " + (ChosenAudio?.Url ?? "-"));
             sb.AppendLine("--- captured ---");
             foreach (var l in _links)
                 sb.AppendLine($"{l.LastActivity:HH:mm:ss.fff} {(l.IsActive ? "▶" : " ")} [{l.Kind} {l.Note}] " +
-                              $"id={MediaSniffer.VideoId(l.Url)} bytes={l.Bytes}  {l.Url}");
+                              $"id={MediaSniffer.VideoId(l.Url)} dur={MediaSniffer.DurationSeconds(l.Url)} " +
+                              $"bytes={l.Bytes}  {l.Url}");
             File.WriteAllText(Path.Combine(AppPaths.LogDir, $"capture_{DateTime.Now:yyyyMMdd_HHmmss}.log"),
                 sb.ToString(), Encoding.UTF8);
         }

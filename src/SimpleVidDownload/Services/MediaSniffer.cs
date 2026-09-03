@@ -175,19 +175,74 @@ public static class MediaSniffer
     public static bool LooksLikeAudio(string url) =>
         DecodeEfg(url).Contains("audio", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>Ghi chú ngắn cho người dùng, ví dụ "720p". Không đoán được thì rỗng.</summary>
+    // "dash_vp9-basic-gen2_720p" -> 720p;  "xpv_progressive.FACEBOOK..C3.360.sve_sd" -> 360p
+    private static readonly Regex HeightDotted = new(@"\.(\d{3,4})\.", RegexOptions.Compiled);
+
+    /// <summary>Ghi chú ngắn cho người dùng, ví dụ "720p trọn bộ". Không đoán được thì rỗng.</summary>
     public static string QualityNote(string url)
     {
-        var m = HeightTag.Match(DecodeEfg(url));
-        return m.Success ? m.Groups[1].Value + "p" : "";
+        var efg = DecodeEfg(url);
+        var m = HeightTag.Match(efg);
+        if (!m.Success) m = HeightDotted.Match(efg);
+        var note = m.Success ? m.Groups[1].Value + "p" : "";
+        if (ProgressiveTag.IsMatch(efg)) note = (note + " trọn bộ").Trim();
+        return note;
     }
 
+    // Facebook có HAI kiểu stream, phân biệt bằng vencode_tag trong efg:
+    //  - "dash_..." : tai san luc mo trang, hinh va tieng TACH thanh hai file, phai ghep
+    //  - "xpv_progressive..." : xin dung luc nguoi dung chuyen tOi the do, va la MOT file
+    //    tron bo (tieng nam san trong). Uu tien kieu nay: vua dung the dang xem, vua khoi ghep.
+    private static readonly Regex ProgressiveTag = new(
+        @"xpv_progressive", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>Link kiểu "trọn bộ": một file có sẵn cả hình và tiếng, không cần ghép.</summary>
+    public static bool IsProgressive(string url) => ProgressiveTag.IsMatch(DecodeEfg(url));
+
     private static readonly Regex VideoIdTag = new(@"""video_id""\s*:\s*""?(\d+)", RegexOptions.Compiled);
+    // link tron bo khong co video_id, thay bang xpv_asset_id
+    private static readonly Regex AssetIdTag = new(@"""xpv_asset_id""\s*:\s*""?(\d+)", RegexOptions.Compiled);
+    private static readonly Regex DurTag = new(@"""duration_s""\s*:\s*(\d+(?:\.\d+)?)", RegexOptions.Compiled);
+
+    /// <summary>Độ dài video (giây) ghi trong efg; 0 nếu không có.</summary>
+    public static double DurationSeconds(string url)
+    {
+        var m = DurTag.Match(DecodeEfg(url));
+        return m.Success && double.TryParse(m.Groups[1].Value,
+            System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : 0;
+    }
+
+    /// <summary>
+    /// Tìm stream ứng với video đang hiện trên trang, nhận diện bằng ĐỘ DÀI. Cần cho story
+    /// nhiều thẻ: thẻ kế được tải sẵn từ lúc mở, chuyển qua là phát từ bộ đệm — không có
+    /// request mạng nào nữa để mà đoán. Độ dài thẻ đang phát (hỏi qua DevTools) so với
+    /// duration_s trong efg; lệch ≤1.5s coi là cùng video, nhiều bản thì lấy bản nét nhất.
+    /// </summary>
+    public static CapturedLink? ByDuration(IReadOnlyList<CapturedLink> links, double seconds)
+    {
+        if (seconds < 1 || double.IsNaN(seconds)) return null;
+        var same = links.Where(l => l.Kind == MP4)
+            .Where(l =>
+            {
+                var d = DurationSeconds(l.Url);
+                return d > 0 && Math.Abs(d - seconds) <= 1.5;
+            })
+            .ToList();
+        if (same.Count == 0) return null;
+
+        // story hay có nhiều thẻ dài y nhau -> bản trọn bộ (chỉ có khi đang xem thẻ đó) là chắc nhất
+        var prog = same.Where(l => IsProgressive(l.Url)).ToList();
+        if (prog.Count > 0) return prog.OrderByDescending(l => l.LastActivity).First();
+        return Sharpest(same);
+    }
 
     /// <summary>Mã video Facebook ghi trong efg — hình và tiếng của cùng một video mang cùng mã.</summary>
     public static string VideoId(string url)
     {
-        var m = VideoIdTag.Match(DecodeEfg(url));
+        var efg = DecodeEfg(url);
+        var m = VideoIdTag.Match(efg);
+        if (m.Success) return m.Groups[1].Value;
+        m = AssetIdTag.Match(efg);
         return m.Success ? m.Groups[1].Value : "";
     }
 
@@ -258,6 +313,10 @@ public static class MediaSniffer
         var mp4s = links.Where(l => l.Kind == MP4).ToList();
         if (mp4s.Count == 0) return links.LastOrDefault(l => l.Kind != AUDIO) ?? links[^1];
 
+        // Link trọn bộ chỉ xuất hiện khi người dùng chuyển tới đúng thẻ đó -> tin nhất
+        var prog = mp4s.Where(l => IsProgressive(l.Url)).ToList();
+        if (prog.Count > 0) return prog.OrderByDescending(l => l.LastActivity).First();
+
         var pageIds = IdsInPageUrl(pageUrl);
         var ofPage = mp4s.Where(l => pageIds.Contains(VideoId(l.Url))).ToList();
         if (ofPage.Count > 0) return Sharpest(ofPage);
@@ -278,6 +337,9 @@ public static class MediaSniffer
     /// </summary>
     public static CapturedLink? PairedAudio(IReadOnlyList<CapturedLink> links, CapturedLink video)
     {
+        // link trọn bộ đã có tiếng sẵn — ghép thêm là hỏng
+        if (IsProgressive(video.Url)) return null;
+
         var id = VideoId(video.Url);
         if (id.Length > 0)
             return links.LastOrDefault(l => l.Kind == AUDIO && VideoId(l.Url) == id);
