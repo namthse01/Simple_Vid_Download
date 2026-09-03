@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -6,8 +7,38 @@ namespace SimpleVidDownload.Services;
 /// <summary>Một link video bắt được, kèm header của chính phiên duyệt đã tải nó.</summary>
 /// <param name="Note">Ghi chú thêm cho người dùng (ví dụ "720p") — không dùng để quyết định gì.</param>
 public record CapturedLink(string Kind, string Url, string Referer, string Cookie, string UserAgent,
-                           string Note = "")
+                           string Note = "") : INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    /// <summary>
+    /// Lần gần nhất trang xin một khúc "ra tấm ra món" của link này. Video đang phát thì được xin
+    /// liên tục; video trang tải sẵn cho lượt sau chỉ bị xin vài trăm byte đầu.
+    /// </summary>
+    public DateTime LastActivity { get; private set; } = DateTime.Now;
+    /// <summary>Tổng byte trang đã xin của link này (theo bytestart/byteend); 0 nếu không biết.</summary>
+    public long Bytes { get; private set; }
+    /// <summary>Đang là link hoạt động gần nhất trong danh sách — hiện dấu ▶ cho người dùng.</summary>
+    public bool IsActive { get; private set; }
+
+    /// <summary>Trang vừa xin thêm một khúc của link này.</summary>
+    public void Touch(long bytes, bool substantial)
+    {
+        if (bytes > 0) Bytes += bytes;
+        if (substantial) LastActivity = DateTime.Now;
+        Notify();
+    }
+
+    public void SetActive(bool on)
+    {
+        if (IsActive == on) return;
+        IsActive = on;
+        Notify();
+    }
+
+    // DisplayMemberPath="Display" nghe sự kiện này -> dòng tự cập nhật, không phải dựng lại danh sách
+    private void Notify() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Display)));
+
     public string Host
     {
         get
@@ -17,14 +48,16 @@ public record CapturedLink(string Kind, string Url, string Referer, string Cooki
         }
     }
 
-    /// <summary>Dòng hiển thị trong danh sách: [LOẠI ghi-chú] host   link-rút-gọn</summary>
+    /// <summary>Dòng hiển thị trong danh sách: ▶ [LOẠI ghi-chú] dung-lượng host   link-rút-gọn</summary>
     public string Display
     {
         get
         {
             var shortUrl = Url.Length > 110 ? Url[..110] + "..." : Url;
             var tag = Note.Length > 0 ? $"{Kind} {Note}" : Kind;
-            return $"[{tag}] {Host}   {shortUrl}";
+            var size = Bytes >= 100_000 ? $"{Bytes / 1048576.0:0.0} MB  " : "";
+            var mark = IsActive ? "▶ " : "";
+            return $"{mark}[{tag}] {size}{Host}   {shortUrl}";
         }
     }
 }
@@ -52,6 +85,59 @@ public static class MediaSniffer
 
     /// <summary>Link này là một khúc byte của file lớn hơn?</summary>
     public static bool IsRangeChunk(string url) => RangeParam.IsMatch(url);
+
+    private static readonly Regex RangeStart = new(@"[?&]bytestart=(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex RangeEnd = new(@"[?&]byteend=(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>Độ dài khúc byte trang xin (byteend − bytestart + 1); -1 nếu link không có range (xin cả file).</summary>
+    public static long RangeLength(string url)
+    {
+        var s = RangeStart.Match(url);
+        var e = RangeEnd.Match(url);
+        if (!s.Success || !e.Success) return -1;
+        if (!long.TryParse(s.Groups[1].Value, out var a) || !long.TryParse(e.Groups[1].Value, out var b)) return -1;
+        return b >= a ? b - a + 1 : 0;
+    }
+
+    /// <summary>
+    /// Khúc từ cỡ này trở lên mới coi là "đang phát". Khúc khởi tạo / mục lục chỉ vài trăm byte,
+    /// và video trang tải sẵn cho lượt kế cũng chỉ bị xin chừng đó.
+    /// </summary>
+    public const long SubstantialBytes = 16 * 1024;
+
+    public static bool IsSubstantial(long rangeLength) => rangeLength < 0 || rangeLength >= SubstantialBytes;
+
+    private static readonly Regex LongNumber = new(@"\d{10,}", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Mọi mã số dài trong địa chỉ trang, kể cả mã giấu trong đoạn base64 (story Facebook:
+    /// /stories/&lt;bucket&gt;/UzpfSVNDOjQ1...= giải ra "S:_ISC:4549365958631252"). Dùng để
+    /// nhận ra stream nào là của chính trang đang xem.
+    /// </summary>
+    public static HashSet<string> IdsInPageUrl(string pageUrl)
+    {
+        var ids = new HashSet<string>();
+        if (string.IsNullOrEmpty(pageUrl)) return ids;
+        string plain;
+        try { plain = Uri.UnescapeDataString(pageUrl); } catch { plain = pageUrl; }
+
+        foreach (Match m in LongNumber.Matches(plain)) ids.Add(m.Value);
+
+        foreach (var seg in plain.Split('/', '?', '&', '#'))
+        {
+            var b64 = seg.TrimEnd('=').Replace('-', '+').Replace('_', '/');
+            if (b64.Length < 12 || !Regex.IsMatch(b64, @"^[A-Za-z0-9+/]+$")) continue;
+            try
+            {
+                b64 = b64.PadRight(b64.Length + (4 - b64.Length % 4) % 4, '=');
+                var text = Encoding.ASCII.GetString(Convert.FromBase64String(b64));
+                if (text.Any(c => c < ' ' || c > '~')) continue;   // không phải chữ -> không phải mã
+                foreach (Match m in LongNumber.Matches(text)) ids.Add(m.Value);
+            }
+            catch { }
+        }
+        return ids;
+    }
 
     /// <summary>Bỏ bytestart/byteend để link trỏ vào cả file. Link thường thì trả về nguyên.</summary>
     public static string StripRange(string url)
@@ -158,23 +244,32 @@ public static class MediaSniffer
 
     /// <summary>
     /// Ưu tiên khi người dùng chưa chọn gì: HLS &gt; MP4 &gt; còn lại (link nhúng xếp cuối).
-    /// Nhiều MP4 có ghi chú độ phân giải thì lấy bản nét nhất; không thì lấy bản đến sau cùng.
-    /// Link chỉ có tiếng không bao giờ tự được chọn.
+    /// Trang có nhiều video (story Facebook tự chuyển và tải sẵn video kế) thì:
+    ///  1. stream mang mã trùng với địa chỉ trang đang xem — chắc nhất;
+    ///  2. không có thì stream đang phát (được xin khúc gần nhất).
+    /// Cùng một video có nhiều bản thì lấy bản nét nhất. Link chỉ có tiếng không bao giờ tự được chọn.
     /// </summary>
-    public static CapturedLink? PickBest(IReadOnlyList<CapturedLink> links)
+    public static CapturedLink? PickBest(IReadOnlyList<CapturedLink> links, string pageUrl = "")
     {
         if (links.Count == 0) return null;
         var hls = links.FirstOrDefault(l => l.Kind == HLS);
         if (hls != null) return hls;
 
-        CapturedLink? best = null;
-        foreach (var l in links)
-        {
-            if (l.Kind != MP4) continue;
-            if (best is null || NoteHeight(l) >= NoteHeight(best)) best = l;
-        }
-        return best ?? links.LastOrDefault(l => l.Kind != AUDIO) ?? links[^1];
+        var mp4s = links.Where(l => l.Kind == MP4).ToList();
+        if (mp4s.Count == 0) return links.LastOrDefault(l => l.Kind != AUDIO) ?? links[^1];
+
+        var pageIds = IdsInPageUrl(pageUrl);
+        var ofPage = mp4s.Where(l => pageIds.Contains(VideoId(l.Url))).ToList();
+        if (ofPage.Count > 0) return Sharpest(ofPage);
+
+        var active = mp4s.OrderByDescending(l => l.LastActivity).First();
+        var id = VideoId(active.Url);
+        return Sharpest(id.Length > 0 ? mp4s.Where(l => VideoId(l.Url) == id).ToList() : [active]);
     }
+
+    /// <summary>Bản nét nhất; bằng nhau thì bản hoạt động gần nhất.</summary>
+    private static CapturedLink Sharpest(List<CapturedLink> same) =>
+        same.OrderByDescending(NoteHeight).ThenByDescending(l => l.LastActivity).First();
 
     /// <summary>
     /// Tìm stream tiếng đi cặp với stream hình đã chọn (Facebook tách hình/tiếng).

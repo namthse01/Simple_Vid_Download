@@ -380,6 +380,10 @@ public partial class MainWindow : Window
             _captured = win.Chosen;
             _capturedAudio = win.ChosenAudio;
             _capturedTitle = MediaSniffer.SafeFileName(win.PageTitle);
+            // tiêu đề chỉ là tên trang ("Facebook") thì gắn thêm mã video, kẻo story nào cũng thành Facebook.mp4
+            var vid = MediaSniffer.VideoId(win.Chosen.Url);
+            if (vid.Length > 0 && _capturedTitle.Length < 16)
+                _capturedTitle = (_capturedTitle + " " + vid).Trim();
             TxtUrl.Text = win.Chosen.Url;
             SetStatus(Loc.T("gotLink"));
         }

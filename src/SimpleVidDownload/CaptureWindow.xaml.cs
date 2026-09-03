@@ -1,4 +1,7 @@
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
@@ -15,7 +18,11 @@ namespace SimpleVidDownload;
 public partial class CaptureWindow : Window
 {
     private readonly ObservableCollection<CapturedLink> _links = new();
-    private readonly HashSet<string> _seen = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, CapturedLink> _byUrl = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Link được xin khúc gần nhất — mang dấu ▶ trong danh sách.</summary>
+    private CapturedLink? _active;
+    /// <summary>Địa chỉ trang hiện tại, kể cả khi trang tự đổi địa chỉ không tải lại (story tự chuyển).</summary>
+    private string _pageUrl = "";
 
     /// <summary>Người dùng đã tự bấm chọn một dòng chưa — nếu rồi thì đừng tự đổi lựa chọn của họ.</summary>
     private bool _userPicked;
@@ -83,13 +90,18 @@ public partial class CaptureWindow : Window
 
         core.WebResourceRequested += OnResourceRequested;
         core.WebResourceResponseReceived += OnResponseReceived;
-        core.SourceChanged += (_, _) => TxtAddr.Text = core.Source;
+        core.SourceChanged += (_, _) =>
+        {
+            _pageUrl = core.Source;
+            TxtAddr.Text = core.Source;
+        };
 
         // Sang trang khac thi XOA danh sach cu.
         // Khong xoa thi link cua video truoc van nam dau danh sach va bi chon nham.
         core.NavigationStarting += (_, e) =>
         {
             _topUrl = e.Uri;              // nho lai de khong chan nham chinh trang nay
+            _pageUrl = e.Uri;
             if (e.IsRedirected) return;   // chuyen huong cua cung trang thi giu nguyen
             Dispatcher.Invoke(ResetLinks);
         };
@@ -133,18 +145,51 @@ public partial class CaptureWindow : Window
         }
 
         // Facebook xin từng khúc byte của cùng một file: gom về link cả file, kẻo tải được mảnh rời
+        var range = MediaSniffer.RangeLength(url);
         url = MediaSniffer.StripRange(url);
         if (MediaSniffer.ShouldSkip(url)) return;
 
         var kind = MediaSniffer.KindFromUrl(url);
         if (kind is null) return;
 
-        Add(Make(kind, url, e.Request.Headers));
+        Add(Make(kind, url, e.Request.Headers), range);
+    }
+
+    /// <summary>Chế độ mổ xẻ: có file dump.on cạnh app thì lưu thân HTML/JSON trang về logs\dump\ để soi cấu trúc.</summary>
+    private static readonly bool DumpOn = File.Exists(Path.Combine(AppPaths.AppRoot, "dump.on"));
+    private static int _dumpN;
+
+    private async Task DumpAsync(CoreWebView2WebResourceResponseReceivedEventArgs e)
+    {
+        try
+        {
+            if (e.Response is null) return;
+            var ct = WebViewHeaders.Get(e.Response.Headers, "Content-Type");
+            if (!(ct.Contains("html") || ct.Contains("json") || ct.Contains("javascript"))) return;
+            var uri = new Uri(e.Request.Uri);
+            if (!uri.Host.EndsWith("facebook.com") || uri.Host.StartsWith("static")) return;
+            if (uri.AbsolutePath.Contains("/rsrc.php")) return;   // script tĩnh, không có dữ liệu
+
+            using var s = await e.Response.GetContentAsync();
+            if (s is null) return;
+            using var ms = new MemoryStream();
+            await s.CopyToAsync(ms);
+
+            var dir = Path.Combine(AppPaths.LogDir, "dump");
+            Directory.CreateDirectory(dir);
+            var n = Interlocked.Increment(ref _dumpN);
+            var name = Regex.Replace(uri.AbsolutePath.Trim('/'), @"[^A-Za-z0-9_.-]+", "_");
+            File.WriteAllBytes(Path.Combine(dir, $"{n:D3}_{name}.txt"), ms.ToArray());
+            File.AppendAllText(Path.Combine(dir, "index.txt"), $"{n:D3}  {ms.Length,9}  {ct}  {e.Request.Uri}\n");
+        }
+        catch { }
     }
 
     // nhận diện theo Content-Type — bắt được cả link không có đuôi file
     private void OnResponseReceived(object? sender, CoreWebView2WebResourceResponseReceivedEventArgs e)
     {
+        if (DumpOn) _ = DumpAsync(e);
+
         var url = MediaSniffer.StripRange(e.Request.Uri);
         if (MediaSniffer.ShouldSkip(url)) return;
 
@@ -152,7 +197,8 @@ public partial class CaptureWindow : Window
         var kind = MediaSniffer.KindFromContentType(contentType);
         if (kind is null) return;
 
-        Add(Make(kind, url, e.Request.Headers));
+        // request đã được đếm ở OnResourceRequested; ở đây chỉ để bắt link không có đuôi file
+        Add(Make(kind, url, e.Request.Headers), 0, countActivity: false);
     }
 
     /// <summary>Dựng link kèm header của phiên; stream chỉ có tiếng thì gắn loại AUDIO cho khỏi chọn nhầm.</summary>
@@ -163,17 +209,39 @@ public partial class CaptureWindow : Window
         return new CapturedLink(kind, url, referer, cookie, ua, MediaSniffer.QualityNote(url));
     }
 
-    private void Add(CapturedLink link)
+    /// <param name="range">Độ dài khúc byte trang vừa xin (-1 = xin cả file, 0 = không biết).</param>
+    /// <param name="countActivity">Có tính lần này là hoạt động không (mỗi request chỉ tính một lần).</param>
+    private void Add(CapturedLink link, long range, bool countActivity = true)
     {
         Dispatcher.Invoke(() =>
         {
-            if (!_seen.Add(link.Url)) return;
-            _links.Add(link);
-            UpdateCounts();
+            bool substantial = countActivity && MediaSniffer.IsSubstantial(range);
+
+            if (_byUrl.TryGetValue(link.Url, out var known))
+            {
+                if (!countActivity) return;
+                known.Touch(Math.Max(0, range), substantial);
+                link = known;
+            }
+            else
+            {
+                link.Touch(Math.Max(0, range), substantial);
+                _byUrl[link.Url] = link;
+                _links.Add(link);
+                UpdateCounts();
+            }
+
+            // video đang phát là link được xin khúc gần nhất -> đánh dấu ▶ cho dễ nhận
+            if (substantial && link.Kind != MediaSniffer.AUDIO && !ReferenceEquals(_active, link))
+            {
+                _active?.SetActive(false);
+                link.SetActive(true);
+                _active = link;
+            }
 
             // Tu chon link TOT NHAT chu khong phai link dau tien: link dau thuong la trang
             // player trung gian, stream that den sau. Nguoi dung da tu bam thi ton trong.
-            if (!_userPicked) LstLinks.SelectedItem = MediaSniffer.PickBest(_links);
+            if (!_userPicked) LstLinks.SelectedItem = MediaSniffer.PickBest(_links, _pageUrl);
         });
     }
 
@@ -181,7 +249,8 @@ public partial class CaptureWindow : Window
     private void ResetLinks()
     {
         _links.Clear();
-        _seen.Clear();
+        _byUrl.Clear();
+        _active = null;
         _userPicked = false;
         LstLinks.SelectedIndex = -1;
         _adBlocked = 0;
@@ -255,7 +324,7 @@ public partial class CaptureWindow : Window
     }
 
     private CapturedLink? CurrentSelection =>
-        LstLinks.SelectedItem as CapturedLink ?? MediaSniffer.PickBest(_links);
+        LstLinks.SelectedItem as CapturedLink ?? MediaSniffer.PickBest(_links, _pageUrl);
 
     private void BtnCopy_Click(object sender, RoutedEventArgs e)
     {
@@ -278,6 +347,30 @@ public partial class CaptureWindow : Window
         // hình và tiếng tách đôi (Facebook) -> đưa luôn stream tiếng để bên ngoài tải và ghép
         ChosenAudio = link.Kind == MediaSniffer.MP4 ? MediaSniffer.PairedAudio(_links, link) : null;
         try { PageTitle = Web.CoreWebView2?.DocumentTitle ?? ""; } catch { }
+        WriteCaptureLog(link);
         Close();
+    }
+
+    /// <summary>
+    /// Ghi lại trang, link chọn và toàn bộ link đã bắt (đầy đủ, không cắt). Lần sau có "tải nhầm
+    /// video" thì còn dấu vết mà mổ — log của yt-dlp cắt cụt URL nên không dùng được.
+    /// </summary>
+    private void WriteCaptureLog(CapturedLink chosen)
+    {
+        try
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("page:   " + _pageUrl);
+            sb.AppendLine("title:  " + PageTitle);
+            sb.AppendLine("chosen: " + chosen.Url);
+            sb.AppendLine("audio:  " + (ChosenAudio?.Url ?? "-"));
+            sb.AppendLine("--- captured ---");
+            foreach (var l in _links)
+                sb.AppendLine($"{l.LastActivity:HH:mm:ss.fff} {(l.IsActive ? "▶" : " ")} [{l.Kind} {l.Note}] " +
+                              $"id={MediaSniffer.VideoId(l.Url)} bytes={l.Bytes}  {l.Url}");
+            File.WriteAllText(Path.Combine(AppPaths.LogDir, $"capture_{DateTime.Now:yyyyMMdd_HHmmss}.log"),
+                sb.ToString(), Encoding.UTF8);
+        }
+        catch { }
     }
 }
