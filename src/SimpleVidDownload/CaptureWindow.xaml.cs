@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Threading;
 using System.Windows.Input;
@@ -32,23 +31,6 @@ public partial class CaptureWindow : Window
     /// không sinh thêm request mạng nào.
     /// </summary>
     private readonly DispatcherTimer _watch = new() { Interval = TimeSpan.FromSeconds(1) };
-
-    /// <summary>
-    /// Lúc người dùng vừa bấm chuột trong trang. Story TỰ CHẠY sang thẻ kế sau vài giây, nên
-    /// chỉ thẻ hiện ra NGAY SAU cú bấm mới là thẻ người dùng thật sự muốn — thẻ tự nhảy đến
-    /// sau đó thì bỏ qua, kẻo vừa ngắm đúng thẻ xong bấm tải lại ra thẻ khác.
-    /// </summary>
-    private DateTime _lastUserClickAt = DateTime.MinValue;
-    private static readonly TimeSpan UserWindow = TimeSpan.FromSeconds(4);
-
-    /// <summary>Thẻ vừa xuất hiện là do người dùng tự bấm chuyển (chứ không phải story tự chạy)?</summary>
-    private bool ByUserNow => DateTime.Now - _lastUserClickAt <= UserWindow;
-
-    /// <summary>Báo về cho app mỗi lần người dùng bấm trong trang. Dùng pointerdown + capture
-    /// để nghe được cả khi trang tự chặn sự kiện ở tầng trên.</summary>
-    private const string ClickReporter =
-        "try{document.addEventListener('pointerdown',function(){" +
-        "try{window.chrome.webview.postMessage('u');}catch(e){}},true);}catch(e){}";
 
     /// <summary>Người dùng đã tự bấm chọn một dòng chưa — nếu rồi thì đừng tự đổi lựa chọn của họ.</summary>
     private bool _userPicked;
@@ -152,9 +134,6 @@ public partial class CaptureWindow : Window
         try { _adScriptId = await core.AddScriptToExecuteOnDocumentCreatedAsync(AdBlock.PageScript); }
         catch { }
 
-        core.WebMessageReceived += (_, _) => _lastUserClickAt = DateTime.Now;
-        try { await core.AddScriptToExecuteOnDocumentCreatedAsync(ClickReporter); } catch { }
-
         _watch.Tick += async (_, _) => await WatchPlayingAsync();
         _watch.Start();
 
@@ -191,7 +170,7 @@ public partial class CaptureWindow : Window
                     System.Globalization.CultureInfo.InvariantCulture, out var seconds)) return;
 
             var hit = MediaSniffer.ByDuration(_links, seconds);
-            if (hit is not null && (_active is null || ByUserNow)) SetChoice(hit);
+            if (hit is not null) SetChoice(hit);
         }
         catch { }
     }
@@ -223,41 +202,9 @@ public partial class CaptureWindow : Window
         Add(Make(kind, url, e.Request.Headers), range);
     }
 
-    /// <summary>Chế độ mổ xẻ: có file dump.on cạnh app thì lưu thân HTML/JSON trang về logs\dump\ để soi cấu trúc.</summary>
-    private static readonly bool DumpOn = File.Exists(Path.Combine(AppPaths.AppRoot, "dump.on"));
-    private static int _dumpN;
-
-    private async Task DumpAsync(CoreWebView2WebResourceResponseReceivedEventArgs e)
-    {
-        try
-        {
-            if (e.Response is null) return;
-            var ct = WebViewHeaders.Get(e.Response.Headers, "Content-Type");
-            if (!(ct.Contains("html") || ct.Contains("json") || ct.Contains("javascript"))) return;
-            var uri = new Uri(e.Request.Uri);
-            if (!uri.Host.EndsWith("facebook.com") || uri.Host.StartsWith("static")) return;
-            if (uri.AbsolutePath.Contains("/rsrc.php")) return;   // script tĩnh, không có dữ liệu
-
-            using var s = await e.Response.GetContentAsync();
-            if (s is null) return;
-            using var ms = new MemoryStream();
-            await s.CopyToAsync(ms);
-
-            var dir = Path.Combine(AppPaths.LogDir, "dump");
-            Directory.CreateDirectory(dir);
-            var n = Interlocked.Increment(ref _dumpN);
-            var name = Regex.Replace(uri.AbsolutePath.Trim('/'), @"[^A-Za-z0-9_.-]+", "_");
-            File.WriteAllBytes(Path.Combine(dir, $"{n:D3}_{name}.txt"), ms.ToArray());
-            File.AppendAllText(Path.Combine(dir, "index.txt"), $"{n:D3}  {ms.Length,9}  {ct}  {e.Request.Uri}\n");
-        }
-        catch { }
-    }
-
     // nhận diện theo Content-Type — bắt được cả link không có đuôi file
     private void OnResponseReceived(object? sender, CoreWebView2WebResourceResponseReceivedEventArgs e)
     {
-        if (DumpOn) _ = DumpAsync(e);
-
         var url = MediaSniffer.StripRange(e.Request.Uri);
         if (MediaSniffer.ShouldSkip(url)) return;
 
@@ -302,7 +249,7 @@ public partial class CaptureWindow : Window
             // video đang phát là link được xin khúc gần nhất -> đánh dấu ▶ cho dễ nhận
             if (substantial && link.Kind != MediaSniffer.AUDIO)
             {
-                if (_active is null || ByUserNow) SetChoice(link);
+                SetChoice(link);
                 return;
             }
 
@@ -451,8 +398,6 @@ public partial class CaptureWindow : Window
             var sb = new StringBuilder();
             sb.AppendLine("page:   " + _pageUrl);
             sb.AppendLine("title:  " + PageTitle);
-            sb.AppendLine("click:  " + (_lastUserClickAt == DateTime.MinValue
-                ? "-" : _lastUserClickAt.ToString("HH:mm:ss.fff")));
             sb.AppendLine("chosen: " + chosen.Url);
             sb.AppendLine("audio:  " + (ChosenAudio?.Url ?? "-"));
             sb.AppendLine("--- captured ---");
