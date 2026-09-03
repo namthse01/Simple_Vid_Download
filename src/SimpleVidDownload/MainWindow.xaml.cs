@@ -18,8 +18,13 @@ public partial class MainWindow : Window
 
     /// <summary>Link vừa bắt từ trình duyệt nhúng, kèm header của phiên đó.</summary>
     private CapturedLink? _captured;
+    /// <summary>Stream tiếng đi cặp với _captured (Facebook tách hình/tiếng) — null nếu không có.</summary>
+    private CapturedLink? _capturedAudio;
     /// <summary>Tiêu đề trang lúc bắt link — dùng làm tên file, vì link stream không mang tên.</summary>
     private string _capturedTitle = "";
+
+    /// <summary>Đang ghép hình + tiếng bằng ffmpeg (vài giây, không hủy được).</summary>
+    private bool _merging;
 
     /// <summary>File vừa tải xong — cho nút "Mở video". Rỗng nghĩa là chưa có gì để mở.</summary>
     private string _lastSavedPath = "";
@@ -373,6 +378,7 @@ public partial class MainWindow : Window
         if (win.Chosen != null)
         {
             _captured = win.Chosen;
+            _capturedAudio = win.ChosenAudio;
             _capturedTitle = MediaSniffer.SafeFileName(win.PageTitle);
             TxtUrl.Text = win.Chosen.Url;
             SetStatus(Loc.T("gotLink"));
@@ -429,12 +435,14 @@ public partial class MainWindow : Window
     /// Hiện bảng vàng kèm nút to. Lỗi kiểu "trang không hỗ trợ" thì nói thẳng là chế độ bắt video
     /// sẽ giải quyết được; lỗi khác thì gợi ý thử cách đó.
     /// </summary>
-    private void ShowRescue(string url, string stdErr)
+    /// <param name="fragment">File tải về chỉ là mảnh rời (chộp nhầm link khúc byte) — lời khuyên khác hẳn.</param>
+    private void ShowRescue(string url, string stdErr, bool fragment = false)
     {
         _rescueUrl = url;
         bool notSupported = LooksUnsupported(stdErr);
-        LblRescueTitle.Text = Loc.T(notSupported ? "rescueTitle" : "rescueTitle2");
-        LblRescueBody.Text = Loc.T(notSupported ? "rescueBody" : "rescueBody2");
+        var variant = fragment ? "3" : notSupported ? "" : "2";
+        LblRescueTitle.Text = Loc.T("rescueTitle" + variant);
+        LblRescueBody.Text = Loc.T("rescueBody" + variant);
         PanelRescue.Visibility = Visibility.Visible;
         GrowToFit(remember: true);
     }
@@ -477,6 +485,9 @@ public partial class MainWindow : Window
             return;
         }
 
+        // đang ghép hình + tiếng (vài giây) -> không nhận lệnh mới
+        if (_merging) return;
+
         var url = TxtUrl.Text.Trim();
         if (string.IsNullOrEmpty(url) || !url.StartsWith("http"))
         {
@@ -501,6 +512,7 @@ public partial class MainWindow : Window
             }
 
             _captured = resolver.Result;
+            _capturedAudio = null;
             if (string.IsNullOrEmpty(_capturedTitle))
                 _capturedTitle = "video_" + DateTime.Now.ToString("yyyyMMdd_HHmmss");
             url = _captured.Url;
@@ -547,29 +559,187 @@ public partial class MainWindow : Window
             }
         }
 
-        var titleForFile = (_captured != null && _captured.Url == url) ? _capturedTitle : "";
+        bool fromCapture = _captured != null && _captured.Url == url;
+        var titleForFile = fromCapture ? _capturedTitle : "";
+        var captured = _captured;
+
+        if (fromCapture && _capturedAudio != null)
+        {
+            // Facebook tách hình và tiếng thành hai stream: tải cả hai rồi ghép lại
+            if (CboQuality.SelectedIndex != 5)
+            {
+                await DownloadSplitAsync(url, _capturedAudio, folder, titleForFile);
+                return;
+            }
+            // chỉ lấy MP3 thì tải thẳng stream tiếng, khỏi động vào phần hình
+            captured = _capturedAudio;
+            url = captured.Url;
+        }
+
         var args = YtDlpRunner.BuildDownloadArgs(
             url, folder, CboQuality.SelectedIndex, ChkPlaylist.IsChecked == true,
-            ChkCookie.IsChecked == true, SelectedBrowser, _captured, titleForFile, overrideHeight);
+            ChkCookie.IsChecked == true, SelectedBrowser, captured, titleForFile, overrideHeight);
 
         await RunAsync(args, Loc.T("fetching"));
+    }
+
+    /// <summary>
+    /// Hình và tiếng nằm ở hai link riêng (Facebook): tải từng phần vào file tạm rồi ghép bằng
+    /// ffmpeg. Ghép chỉ là đóng gói lại, không mã hoá lại nên vài giây là xong.
+    /// </summary>
+    private async Task DownloadSplitAsync(string videoUrl, CapturedLink audio, string folder, string title)
+    {
+        if (string.IsNullOrEmpty(title)) title = "video_" + DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        bool useCookie = ChkCookie.IsChecked == true;
+
+        // file tạm cũ (cùng tên trang, video khác) mà còn nằm đó thì yt-dlp bỏ qua không tải -> ghép nhầm
+        foreach (var stale in Directory.GetFiles(folder, title + ".hinh.*")
+                     .Concat(Directory.GetFiles(folder, title + ".tieng.*")))
+            try { File.Delete(stale); } catch { }
+
+        var vArgs = YtDlpRunner.BuildDownloadArgs(videoUrl, folder, CboQuality.SelectedIndex, false,
+            useCookie, SelectedBrowser, _captured, title + ".hinh");
+        var rv = await RunCoreAsync(vArgs, Loc.T("dlVideo"));
+        if (rv is null) return;
+        if (!Landed(rv)) { ReportFailure(rv); return; }
+
+        var aArgs = YtDlpRunner.BuildDownloadArgs(audio.Url, folder, CboQuality.SelectedIndex, false,
+            useCookie, SelectedBrowser, audio, title + ".tieng");
+        var ra = await RunCoreAsync(aArgs, Loc.T("dlAudio"), fresh: false);
+        if (ra is null) return;
+        if (!Landed(ra)) { ReportFailure(ra); return; }
+
+        _merging = true;
+        SetBusy(true);
+        Pb.IsIndeterminate = true;
+        SetStatus(Loc.T("mergeAv"));
+
+        var outPath = UniquePath(Path.Combine(folder, title + ".mp4"));
+        var (ok, log) = await Ffmpeg.MergeAsync(rv.SavedPath, ra.SavedPath, outPath);
+
+        _merging = false;
+        SetBusy(false);
+        Pb.IsIndeterminate = false;
+
+        if (!ok)
+        {
+            // giữ lại hai file tạm, ít ra người dùng còn phần hình
+            SetStatus(Loc.T("mergeFail"));
+            AppendLog(Environment.NewLine + "--- LỖI ffmpeg ---" + Environment.NewLine + log);
+            return;
+        }
+
+        try { File.Delete(rv.SavedPath); } catch { }
+        try { File.Delete(ra.SavedPath); } catch { }
+
+        Pb.Value = 100;
+        _lastSavedPath = outPath;
+        BtnOpenVideo.IsEnabled = true;
+        SetStatus(Loc.T("doneNamed") + Path.GetFileName(outPath));
+
+        if (_pendingUpscale)
+        {
+            _pendingUpscale = false;
+            await RunUpscaleAsync(outPath, _pendingUpscaleTarget);
+        }
+    }
+
+    /// <summary>yt-dlp báo xong VÀ file thật sự nằm trên đĩa.</summary>
+    private static bool Landed(YtDlpResult r) =>
+        r.Success && !string.IsNullOrEmpty(r.SavedPath) && File.Exists(r.SavedPath);
+
+    /// <summary>Đã có file trùng tên thì thêm (2), (3)... chứ không ghi đè.</summary>
+    private static string UniquePath(string path)
+    {
+        if (!File.Exists(path)) return path;
+        var dir = Path.GetDirectoryName(path) ?? "";
+        var stem = Path.GetFileNameWithoutExtension(path);
+        var ext = Path.GetExtension(path);
+        for (int i = 2; ; i++)
+        {
+            var p = Path.Combine(dir, $"{stem} ({i}){ext}");
+            if (!File.Exists(p)) return p;
+        }
     }
 
     // ================= chạy yt-dlp =================
 
     private async Task RunAsync(IEnumerable<string> args, string startStatus)
     {
-        _log.Clear();
-        TxtLog.Text = "";
+        var result = await RunCoreAsync(args, startStatus);
+        if (result is null) return;
+
+        if (result.Cancelled)
+        {
+            SetStatus(Loc.T("cancelled"));
+        }
+        else if (result.Success)
+        {
+            Pb.Value = 100;
+            SetStatus(string.IsNullOrEmpty(result.SavedFile)
+                ? Loc.T("done")
+                : Loc.T("doneNamed") + result.SavedFile);
+
+            // chỉ bật nút khi thật sự có file trên đĩa (lệnh -U chẳng hạn thì không có)
+            if (!string.IsNullOrEmpty(result.SavedPath) && File.Exists(result.SavedPath))
+            {
+                // Chộp nhầm link khúc byte thì yt-dlp vẫn báo xong, nhưng file là mảnh rời
+                // không mở được — nói thẳng chứ đừng báo thành công
+                if (MediaFile.IsBareFragment(result.SavedPath))
+                {
+                    try { File.Delete(result.SavedPath); } catch { }
+                    Pb.Value = 0;
+                    SetStatus(Loc.T("fragOnly"));
+                    ShowRescue(TxtUrl.Text.Trim(), "", fragment: true);
+                    return;
+                }
+
+                _lastSavedPath = result.SavedPath;
+                BtnOpenVideo.IsEnabled = true;
+
+                // chỉ chạy AI khi bước dò nguồn đã kết luận là cần
+                if (_pendingUpscale)
+                {
+                    _pendingUpscale = false;
+                    await RunUpscaleAsync(result.SavedPath, _pendingUpscaleTarget);
+                }
+            }
+        }
+        else
+        {
+            ReportFailure(result);
+        }
+    }
+
+    private void ReportFailure(YtDlpResult result)
+    {
+        if (result.Cancelled) { SetStatus(Loc.T("cancelled")); return; }
+        SetStatus(Loc.T("failed"));
+        ShowRescue(TxtUrl.Text.Trim(), result.StdErr);
+        if (!string.IsNullOrWhiteSpace(result.StdErr))
+            AppendLog(Environment.NewLine + "--- LỖI ---" + Environment.NewLine + result.StdErr);
+    }
+
+    /// <summary>
+    /// Chạy yt-dlp kèm cập nhật giao diện (bận/tiến trình/nhật ký). Trả về null nếu không chạy
+    /// được — lúc đó đã báo lỗi rồi. Phần diễn giải kết quả để nơi gọi lo.
+    /// </summary>
+    /// <param name="fresh">Lần tải mới: xoá nhật ký, ẩn bảng cứu cánh. Bước tiếp của cùng một lần tải thì false.</param>
+    private async Task<YtDlpResult?> RunCoreAsync(IEnumerable<string> args, string startStatus, bool fresh = true)
+    {
+        if (fresh)
+        {
+            _log.Clear();
+            TxtLog.Text = "";
+            // lần tải mới -> file cũ không còn liên quan nữa
+            _lastSavedPath = "";
+            BtnOpenVideo.IsEnabled = false;
+            HideRescue();
+        }
         Pb.IsIndeterminate = true;
         Pb.Value = 0;
         SetStatus(startStatus);
         SetBusy(true);
-
-        // lần tải mới -> file cũ không còn liên quan nữa
-        _lastSavedPath = "";
-        BtnOpenVideo.IsEnabled = false;
-        HideRescue();
 
         _runner = new YtDlpRunner();
         _runner.LineReceived += line => Dispatcher.Invoke(() => AppendLog(line));
@@ -590,43 +760,11 @@ public partial class MainWindow : Window
             Pb.IsIndeterminate = false;
             SetStatus(Loc.T("cantRun") + ex.Message);
             SetBusy(false);
-            return;
+            return null;
         }
 
         Pb.IsIndeterminate = false;
         SetBusy(false);
-
-        if (result.Cancelled)
-        {
-            SetStatus(Loc.T("cancelled"));
-        }
-        else if (result.Success)
-        {
-            Pb.Value = 100;
-            SetStatus(string.IsNullOrEmpty(result.SavedFile)
-                ? Loc.T("done")
-                : Loc.T("doneNamed") + result.SavedFile);
-
-            // chỉ bật nút khi thật sự có file trên đĩa (lệnh -U chẳng hạn thì không có)
-            if (!string.IsNullOrEmpty(result.SavedPath) && File.Exists(result.SavedPath))
-            {
-                _lastSavedPath = result.SavedPath;
-                BtnOpenVideo.IsEnabled = true;
-
-                // chỉ chạy AI khi bước dò nguồn đã kết luận là cần
-                if (_pendingUpscale)
-                {
-                    _pendingUpscale = false;
-                    await RunUpscaleAsync(result.SavedPath, _pendingUpscaleTarget);
-                }
-            }
-        }
-        else
-        {
-            SetStatus(Loc.T("failed"));
-            ShowRescue(TxtUrl.Text.Trim(), result.StdErr);
-            if (!string.IsNullOrWhiteSpace(result.StdErr))
-                AppendLog(Environment.NewLine + "--- LỖI ---" + Environment.NewLine + result.StdErr);
-        }
+        return result;
     }
 }

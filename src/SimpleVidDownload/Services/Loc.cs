@@ -130,6 +130,16 @@ public static class Loc
         ["embedOk"]      = ["✅ Đã lấy được link thật, bắt đầu tải...", "✅ Got the real link, starting the download..."],
         ["embedFail"]    = ["❌ Không lấy được link video thật từ trang nhúng.",
                             "❌ Could not get the real video link from that embed page."],
+        ["dlVideo"]      = ["Đang tải phần hình...", "Downloading the video track..."],
+        ["dlAudio"]      = ["Đang tải phần tiếng...", "Downloading the audio track..."],
+        ["mergeAv"]      = ["Đang ghép hình + tiếng thành một file...", "Merging video + audio into one file..."],
+        ["mergeFail"]    = ["❌ Ghép hình và tiếng thất bại — xem nhật ký bên dưới.",
+                            "❌ Could not merge video and audio — see the log below."],
+        ["fragOnly"]     = ["❌ File tải về chỉ là một mảnh giữa video (thiếu phần đầu) nên không phát được — đã xoá.",
+                            "❌ The download was only a mid-video fragment (no header) so it can't play — removed."],
+        ["rescueTitle3"] = ["File tải về không phát được", "The downloaded file won't play"],
+        ["rescueBody3"]  = ["Link vừa chọn chỉ là một khúc của video. Mở lại trang trong trình duyệt, để video phát vài giây rồi chọn dòng [MP4] — app sẽ tự ghép thêm [AUDIO] nếu có.",
+                            "That link was only one chunk of the video. Open the page in the browser again, let it play a few seconds, then pick the [MP4] row — the app merges [AUDIO] automatically when present."],
 
         // --- hộp thoại ---
         ["msgNeedUrl"]   = ["Hãy dán link video vào ô (bắt đầu bằng http/https).",

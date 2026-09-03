@@ -31,6 +31,8 @@ public partial class CaptureWindow : Window
 
     /// <summary>Link người dùng đã chọn (null nếu đóng cửa sổ mà không chọn).</summary>
     public CapturedLink? Chosen { get; private set; }
+    /// <summary>Stream tiếng đi cặp với link đã chọn — chỉ có khi trang tách hình/tiếng (Facebook).</summary>
+    public CapturedLink? ChosenAudio { get; private set; }
     /// <summary>Tiêu đề trang lúc chọn — dùng đặt tên file.</summary>
     public string PageTitle { get; private set; } = "";
 
@@ -130,27 +132,35 @@ public partial class CaptureWindow : Window
             return;
         }
 
+        // Facebook xin từng khúc byte của cùng một file: gom về link cả file, kẻo tải được mảnh rời
+        url = MediaSniffer.StripRange(url);
         if (MediaSniffer.ShouldSkip(url)) return;
 
         var kind = MediaSniffer.KindFromUrl(url);
         if (kind is null) return;
 
-        var (referer, cookie, ua) = WebViewHeaders.Triple(e.Request.Headers);
-        Add(new CapturedLink(kind, url, referer, cookie, ua));
+        Add(Make(kind, url, e.Request.Headers));
     }
 
     // nhận diện theo Content-Type — bắt được cả link không có đuôi file
     private void OnResponseReceived(object? sender, CoreWebView2WebResourceResponseReceivedEventArgs e)
     {
-        var url = e.Request.Uri;
+        var url = MediaSniffer.StripRange(e.Request.Uri);
         if (MediaSniffer.ShouldSkip(url)) return;
 
         var contentType = WebViewHeaders.Get(e.Response?.Headers, "Content-Type");
         var kind = MediaSniffer.KindFromContentType(contentType);
         if (kind is null) return;
 
-        var (referer, cookie, ua) = WebViewHeaders.Triple(e.Request.Headers);
-        Add(new CapturedLink(kind, url, referer, cookie, ua));
+        Add(Make(kind, url, e.Request.Headers));
+    }
+
+    /// <summary>Dựng link kèm header của phiên; stream chỉ có tiếng thì gắn loại AUDIO cho khỏi chọn nhầm.</summary>
+    private static CapturedLink Make(string kind, string url, CoreWebView2HttpRequestHeaders headers)
+    {
+        var (referer, cookie, ua) = WebViewHeaders.Triple(headers);
+        if (kind == MediaSniffer.MP4 && MediaSniffer.LooksLikeAudio(url)) kind = MediaSniffer.AUDIO;
+        return new CapturedLink(kind, url, referer, cookie, ua, MediaSniffer.QualityNote(url));
     }
 
     private void Add(CapturedLink link)
@@ -265,6 +275,8 @@ public partial class CaptureWindow : Window
         }
 
         Chosen = link;
+        // hình và tiếng tách đôi (Facebook) -> đưa luôn stream tiếng để bên ngoài tải và ghép
+        ChosenAudio = link.Kind == MediaSniffer.MP4 ? MediaSniffer.PairedAudio(_links, link) : null;
         try { PageTitle = Web.CoreWebView2?.DocumentTitle ?? ""; } catch { }
         Close();
     }

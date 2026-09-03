@@ -102,6 +102,7 @@ The whole interface speaks English too — hit **EN** in the header:
 | Quality picker | Best / 1080p / 720p / 480p / **audio-only MP3** |
 | Playlists | Tick *Tải cả playlist* and paste a playlist URL |
 | Login-gated videos | Tick *Dùng cookie* to reuse your browser session (private or age-restricted videos). Prefer `edge` or `firefox` — recent Chrome locks its cookie store |
+| Facebook / Instagram (stories, reels, feed) | Open the page in the built-in browser (🌐), let it play a few seconds, pick the **[MP4]** row. Facebook splits video and audio into two streams and fetches them in byte-range chunks — the app collapses the chunks into whole-file links and merges the matching **[AUDIO]** stream in automatically. If a download ever turns out to be a bare fragment, the app says so instead of reporting success |
 | Live progress | Percentage, speed and full log inside the window |
 | Cancel | The download button turns into a **cancel** button while running |
 | Update engine | Refreshes yt-dlp — press this first when YouTube suddenly breaks |
@@ -311,6 +312,7 @@ tự điền luôn vào ô.
 | Chọn chất lượng | Tốt nhất / 1080p / 720p / 480p / **chỉ lấy MP3** |
 | Tải cả playlist | Tick **Tải cả playlist** rồi dán link playlist |
 | Video cần đăng nhập | Tick **Dùng cookie** (video riêng tư, giới hạn tuổi...) — nên chọn `edge` hoặc `firefox`, Chrome bản mới hay khóa cookie |
+| Facebook / Instagram (story, reel, bảng tin) | Mở trang trong trình duyệt nhúng (🌐), để video phát vài giây rồi chọn dòng **[MP4]**. Facebook tách hình và tiếng thành 2 stream và xin theo từng khúc byte — app tự gom khúc về link cả file và tự ghép stream **[AUDIO]** cùng video vào. Lỡ tải về chỉ được một mảnh rời thì app báo thẳng chứ không báo thành công |
 | Thanh tiến độ + log | Xem % tải, tốc độ, lỗi ngay trong app |
 | Hủy giữa chừng | Nút TẢI XUỐNG biến thành nút **HỦY** khi đang tải |
 | Cập nhật engine | Cập nhật yt-dlp — bấm cái này đầu tiên khi YouTube đột nhiên tải lỗi |
