@@ -11,6 +11,14 @@ public record CapturedLink(string Kind, string Url, string Referer, string Cooki
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    // record mặc định so sánh bằng GIÁ TRỊ của mọi trường — kể cả Bytes/LastActivity vốn bị
+    // Touch() sửa liên tục khi video phát. ListBox ghi nhớ dòng đã chọn theo cách so sánh đó,
+    // nên item vừa đổi giá trị là nó không nhận ra nữa: không bỏ chọn được dòng cũ (dòng nào
+    // cũng xanh), và hỏi "đang chọn dòng nào" thì trả lời không có. Mỗi link là một đối tượng
+    // riêng, so sánh theo tham chiếu mới đúng.
+    public virtual bool Equals(CapturedLink? other) => ReferenceEquals(this, other);
+    public override int GetHashCode() => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(this);
+
     /// <summary>
     /// Lần gần nhất trang xin một khúc "ra tấm ra món" của link này. Video đang phát thì được xin
     /// liên tục; video trang tải sẵn cho lượt sau chỉ bị xin vài trăm byte đầu.

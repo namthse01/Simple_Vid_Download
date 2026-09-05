@@ -249,6 +249,11 @@ public partial class CaptureWindow : Window
             // video đang phát là link được xin khúc gần nhất -> đánh dấu ▶ cho dễ nhận
             if (substantial && link.Kind != MediaSniffer.AUDIO)
             {
+                // Hoạt động nhảy sang link KHÁC = người dùng vừa bấm play một video khác.
+                // Đó là ý định mới và rõ hơn lựa chọn cũ, nên trả lại quyền tự chọn — không thì
+                // trang có nhiều video, họ bấm chọn một dòng rồi là dòng đó dính luôn, bấm play
+                // video khác mãi vẫn tải về đúng video đầu tiên.
+                if (!ReferenceEquals(_active, link)) _userPicked = false;
                 SetChoice(link);
                 return;
             }
@@ -272,7 +277,9 @@ public partial class CaptureWindow : Window
             link.SetActive(true);
             _active = link;
         }
-        if (!_userPicked) LstLinks.SelectedItem = link;
+        if (_userPicked) return;
+        LstLinks.SelectedItem = link;
+        LstLinks.ScrollIntoView(link);   // danh sách dài thì dòng được chọn phải nhìn thấy được
     }
 
     /// <summary>Xoá sạch link đã bắt (gọi khi chuyển sang trang khác).</summary>
