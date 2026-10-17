@@ -223,6 +223,11 @@ public class YtDlpRunner
 
     /// <summary>Dựng tham số tải theo lựa chọn trên giao diện.</summary>
     /// <param name="overrideHeight">Nếu có, dùng chiều cao này thay cho mục chất lượng đã chọn.</param>
+    /// <summary>Khớp mọi đuôi KHÔNG phải định dạng hình/tiếng (php, aspx, unknown_video...).</summary>
+    private const string NotMediaExt =
+        "^(?!(?:mp4|m4v|m4a|mov|webm|weba|mkv|mka|avi|wmv|flv|f4v|3gp|3g2|ts|mts|m2ts|"
+        + "mpg|mpeg|ogg|ogv|oga|opus|mp3|aac|wav|flac)$).+$";
+
     public static List<string> BuildDownloadArgs(
         string url, string folder, int qualityIndex, bool playlist,
         bool useCookie, string browser, CapturedLink? captured, string? titleForFile,
@@ -275,6 +280,13 @@ public class YtDlpRunner
         }
 
         if (!playlist) a.Add("--no-playlist");
+
+        // Nhiều máy chủ phát video qua một script: ".../remote_control.php?file=abc.mp4".
+        // yt-dlp suy đuôi file từ đường dẫn thành "php" rồi từ chối ghi vì lý do an toàn
+        // ("extracted extension is unusual"). Đổi mọi đuôi không phải media thành mp4 ngay sau
+        // khi chọn định dạng, trước khi đặt tên file. Cơ chế an toàn của yt-dlp vẫn bật
+        // nguyên — thậm chí chặt hơn: link đuôi .bat giả làm video cũng chỉ ra được .mp4.
+        a.AddRange(["--replace-in-metadata", "video:ext", NotMediaExt, "mp4"]);
 
         if (useCookie)
         {
